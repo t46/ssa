@@ -3,6 +3,10 @@ import json
 import yaml
 from pathlib import Path
 from typing import List, Dict, Any
+import PyPDF2
+import anthropic
+import os
+from tools.semantic_search import SemanticSearcher
 
 
 def load_questionnaire_map() -> Dict[str, Any]:
@@ -19,91 +23,147 @@ def load_codebook_map() -> Dict[str, Any]:
         return json.load(f)
 
 
+def extract_pdf_content(pdf_path: Path, max_pages: int = 30) -> str:
+    """Extract text content from PDF file."""
+    with open(pdf_path, 'rb') as file:
+        pdf_reader = PyPDF2.PdfReader(file)
+        text = ""
+        num_pages = min(len(pdf_reader.pages), max_pages)
+        for page_num in range(num_pages):
+            page = pdf_reader.pages[page_num]
+            text += page.extract_text() + "\n"
+    return text
+
+
+def map_variables_to_questions(proposals: List[Dict[str, Any]], searcher: SemanticSearcher) -> List[Dict[str, Any]]:
+    """Map variable descriptions to actual WVS variable codes."""
+    for proposal in proposals:
+        mapped_vars = {}
+        for var_type in ['dependent', 'independent', 'controls', 'mediators']:
+            if var_type in proposal.get('variables', {}):
+                mapped_vars[var_type] = []
+                for var_desc in proposal['variables'][var_type]:
+                    results = searcher.search(var_desc, top_k=1)
+                    if results:
+                        var_code, label, score, _ = results[0]
+                        if score > 0.3:  # Threshold for relevance
+                            mapped_vars[var_type].append(var_code)
+                            print(f"Mapped '{var_desc}' to {var_code} ({label})")
+                        else:
+                            print(f"No good match for '{var_desc}'")
+        proposal['variables'] = mapped_vars
+    return proposals
+
+
 def generate_research_proposals() -> List[Dict[str, Any]]:
-    """Generate research proposals based on WVS data."""
-    # Load mappings to understand available variables
-    questionnaire = load_questionnaire_map()
+    """Generate research proposals based on WVS data using LLM."""
+    # Load questionnaire PDF content
+    pdf_path = Path("data/raw/F00010738-WVS-7_Master_Questionnaire_2017-2020_English.pdf")
+    pdf_content = extract_pdf_content(pdf_path)
+    
+    # Load codebook for variable mapping
     codebook = load_codebook_map()
     
-    # Generate 3 research proposals for USA data
-    proposals = [
-        {
-            "id": 1,
-            "title": "The Political Polarization of Trust: How Political Ideology Shapes Institutional and Interpersonal Trust in Contemporary America",
-            "objective": "To examine how political ideology (liberal vs. conservative) influences patterns of trust in government institutions, media, and interpersonal relationships among Americans",
-            "theoretical_background": "Drawing on social capital theory (Putnam, 2000) and political psychology literature, this study explores how increasing political polarization affects fundamental trust relationships. Trust is essential for democratic functioning, yet partisan sorting may create distinct trust ecosystems.",
-            "hypotheses": [
-                "H1: Conservative Americans will show higher trust in traditional institutions (military, police) while liberal Americans will show higher trust in scientific and educational institutions",
-                "H2: Political ideology will moderate the relationship between media consumption patterns and institutional trust",
-                "H3: Interpersonal trust will be negatively associated with perceived political polarization, regardless of individual ideology"
-            ],
-            "variables": {
-                "dependent": ["Q57", "Q58", "Q59", "Q60", "Q61", "Q62", "Q63", "Q64", "Q65", "Q66", "Q67", "Q68", "Q69", "Q70", "Q71"],
-                "independent": ["Q240"],
-                "controls": ["Q260", "Q262", "Q263", "Q273", "Q275", "Q287", "Q288"]
-            },
-            "analytical_approach": "Multiple regression analysis with interaction terms, controlling for demographics"
-        },
-        {
-            "id": 2,
-            "title": "Economic Insecurity and Social Values: How Financial Stress Shapes Americans' Attitudes Toward Immigration and Social Welfare",
-            "objective": "To investigate how individual economic insecurity influences attitudes toward immigration policy and social welfare programs in the United States",
-            "theoretical_background": "Building on realistic group conflict theory and economic anxiety literature, this study examines how personal economic circumstances shape zero-sum thinking about resource distribution. Economic insecurity may activate in-group favoritism and resistance to policies perceived as benefiting out-groups.",
-            "hypotheses": [
-                "H1: Higher economic insecurity will be associated with more restrictive attitudes toward immigration",
-                "H2: The relationship between economic insecurity and welfare attitudes will be moderated by racial/ethnic identity",
-                "H3: Economic insecurity will strengthen the correlation between nationalism and anti-immigration sentiment"
-            ],
-            "variables": {
-                "dependent": ["Q121", "Q122", "Q123", "Q124", "Q125", "Q126", "Q127", "Q128", "Q129", "Q130"],
-                "independent": ["Q50", "Q51", "Q52", "Q53", "Q54", "Q55"],
-                "controls": ["Q260", "Q262", "Q273", "Q275", "Q287", "Q288", "Q290"]
-            },
-            "analytical_approach": "Structural equation modeling to test mediation and moderation effects"
-        },
-        {
-            "id": 3,
-            "title": "Religion, Science, and Well-being: Exploring the Paradox of Faith and Happiness in Secular America",
-            "objective": "To examine how religious beliefs and practices relate to subjective well-being and life satisfaction in an increasingly secular American society",
-            "theoretical_background": "While secularization theory predicts declining religious influence, research consistently shows positive associations between religiosity and well-being. This study explores mechanisms underlying this relationship and whether secular sources provide similar benefits.",
-            "hypotheses": [
-                "H1: Religious attendance will show stronger positive associations with well-being than private religious beliefs",
-                "H2: The religiosity-happiness relationship will be mediated by social support and sense of meaning",
-                "H3: Trust in science will moderate the relationship between religiosity and well-being, with lower effects among those with high scientific trust"
-            ],
-            "variables": {
-                "dependent": ["Q46", "Q47", "Q48", "Q49"],
-                "independent": ["Q164", "Q165", "Q166", "Q167", "Q168", "Q169", "Q170", "Q171", "Q172", "Q173"],
-                "mediators": ["Q1", "Q2", "Q3", "Q4", "Q5", "Q6"],
-                "controls": ["Q260", "Q262", "Q263", "Q270", "Q273", "Q275", "Q287", "Q288"]
-            },
-            "analytical_approach": "Mediation analysis using bootstrapping methods and multi-group comparison"
-        }
-    ]
+    # Create prompt for LLM
+    prompt = f"""Based on the World Values Survey Wave 7 questionnaire content below, generate 1 innovative research proposal for analyzing American values and attitudes.
+
+For the proposal, provide:
+1. A compelling title
+2. Clear research objective 
+3. Theoretical background (2-3 sentences referencing relevant theories)
+4. One testable hypothesis
+5. Variables needed:
+   - Dependent variables (describe what you want to measure)
+   - Independent variables (describe predictors)
+   - Control variables (describe demographics/confounds)
+   - Mediators (if applicable)
+6. Analytical approach
+
+Questionnaire excerpt:
+{pdf_content[:5000]}
+
+Format the output as a JSON array with the structure shown in the example.
+
+Example structure:
+[{{
+  "id": 1,
+  "title": "Title here",
+  "objective": "Research objective",
+  "theoretical_background": "Theory explanation",
+  "hypotheses": ["H1", "H2", "H3"],
+  "variables": {{
+    "dependent": ["description of dependent variables"],
+    "independent": ["description of independent variables"],
+    "controls": ["age", "gender", "education", "income"]
+  }},
+  "analytical_approach": "Statistical method"
+}}]
+"""
+    
+    # Initialize Anthropic client
+    client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+    
+    # Generate proposals using Claude
+    response = client.messages.create(
+        model="claude-3-5-sonnet-20241022",
+        max_tokens=4000,
+        temperature=0.7,
+        messages=[{
+            "role": "user",
+            "content": prompt
+        }]
+    )
+    
+    # Parse the response
+    import re
+    response_text = getattr(response, "content", None)
+    if isinstance(response_text, list) and hasattr(response_text[0], "text"):
+        response_text = response_text[0].text
+    elif isinstance(response_text, str):
+        pass  # already a string
+    else:
+        raise ValueError("Unexpected response format from LLM.")
+
+    json_match = re.search(r'\[\s*{[\s\S]*}\s*\]', response_text)
+    if json_match:
+        proposals = json.loads(json_match.group())
+    else:
+        print("Error: Could not parse LLM response as JSON.")
+        raise ValueError("Could not parse LLM response as JSON.")
+    
+    # Map variable descriptions to actual WVS codes
+    searcher = SemanticSearcher()
+    searcher.load_and_index_file(Path("data/code-maps/codebook_map.json"))
+    proposals = map_variables_to_questions(proposals, searcher)
     
     return proposals
 
 
 def save_research_proposals():
     """Generate and save research proposals to YAML file."""
-    proposals = generate_research_proposals()
-    
-    output = {
-        "research_proposals": proposals,
-        "metadata": {
-            "dataset": "WVS Wave 7 (2017-2022)",
-            "country": "United States (B_COUNTRY = 840)",
-            "sample_weight": "S017",
-            "note": "All analyses should apply population weights and handle missing values appropriately"
+    try:
+        proposals = generate_research_proposals()
+        
+        output = {
+            "research_proposals": proposals,
+            "metadata": {
+                "dataset": "WVS Wave 7 (2017-2022)",
+                "country": "United States (B_COUNTRY = 840)",
+                "sample_weight": "W_WEIGHT",
+                "note": "All analyses should apply population weights and handle missing values appropriately"
+            }
         }
-    }
-    
-    output_path = Path("spec/research.yaml")
-    with open(output_path, "w", encoding="utf-8") as f:
-        yaml.dump(output, f, default_flow_style=False, sort_keys=False, allow_unicode=True)
-    
-    print(f"Research proposals saved to {output_path}")
-    return proposals
+        
+        output_path = Path("spec/research.yaml")
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(output_path, "w", encoding="utf-8") as f:
+            yaml.dump(output, f, default_flow_style=False, sort_keys=False, allow_unicode=True)
+        
+        print(f"Research proposals saved to {output_path}")
+        return proposals
+    except Exception as e:
+        print(f"Error generating research proposals: {e}")
+        raise
 
 
 if __name__ == "__main__":
