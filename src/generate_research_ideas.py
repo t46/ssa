@@ -101,7 +101,7 @@ Example structure:
 """
     
     # Initialize Anthropic client
-    client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+    client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY_SSA"))
     
     # Generate proposals using Claude
     response = client.messages.create(

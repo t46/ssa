@@ -1,40 +1,41 @@
 research_proposals:
 - id: 1
-  title: 'Digital Technology and Social Trust: Examining the Role of Science Attitudes
-    as a Mediator in American Society'
-  objective: To investigate how attitudes toward science and technology influence
-    the relationship between digital technology use and generalized social trust among
-    Americans
-  theoretical_background: Drawing on social capital theory (Putnam) and technological
-    determinism, this study explores how modern technology shapes social connections
-    and trust formation. The research builds on cultivation theory to examine how
-    exposure to digital technology and scientific worldviews shapes perceptions of
-    social reality and trustworthiness of others.
+  title: 'Digital Technology and Social Trust: Examining the Role of Online Social
+    Capital in American Society'
+  objective: To investigate how Americans' engagement with digital technology and
+    social media influences their levels of interpersonal and institutional trust,
+    mediated by online social capital formation
+  theoretical_background: Drawing on Putnam's social capital theory and its digital
+    extension by Wellman et al., this study examines how online interactions reshape
+    traditional trust formation mechanisms. The research builds on cybersocial transformation
+    theory, which suggests that digital spaces create new forms of social connection
+    and trust dynamics.
   hypotheses:
-  - Greater digital technology use will be negatively associated with generalized
-    social trust, mediated by positive attitudes toward science and technology
+  - Greater engagement with digital technology and social media will be negatively
+    associated with interpersonal trust levels, but this relationship will be moderated
+    by the quality of online social capital
   variables:
     dependent:
     - Q60
-    - Q57
+    - btigovindex
+    - Q60
     independent:
     - Q44
-    - Q44
-    - Q3
+    - btiintegration
+    - v2x_cspart
     controls:
     - Q262
-    - Q260
     - Q275A
     - Q288R
     - H_URBRURAL
     - Q98R
-    - Q171
+    - Q94R
     mediators:
-    - Q158
-    - Q160
-  analytical_approach: Structural equation modeling (SEM) to test the hypothesized
-    mediation model, with bootstrapped confidence intervals to assess indirect effects.
-    Multiple regression analyses will be used to examine individual variable relationships.
+    - Q207
+    - Q105R
+  analytical_approach: Structural equation modeling (SEM) to test direct and indirect
+    effects, with bootstrapped confidence intervals for testing mediation. Multi-level
+    modeling will account for regional clustering effects.
 metadata:
   dataset: WVS Wave 7 (2017-2022)
   country: United States (B_COUNTRY = 840)

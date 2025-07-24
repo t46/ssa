@@ -35,7 +35,7 @@ https://www.worldvaluessurvey.org/WVSDocumentationWV7.jsp から下記データ�
 
 **ステップ 4｜分析コード生成と実行**
 
-1. 分析コード src/analysis.py を生成：  
+1. 分析コード outputs/analysis.py を生成：  
    * S017 ウェイト適用  
    * 欠測処理とカテゴリ再符号化  
    * ロジスティック／OLS／重回帰など仮説別モデル  

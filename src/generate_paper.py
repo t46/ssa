@@ -7,6 +7,9 @@ from typing import Dict, Any, List, Optional
 import anthropic
 import os
 import subprocess
+from claude_code_sdk import query, ClaudeCodeOptions
+import asyncio
+from src.terminal_formatter import formatter, MessageType
 
 
 class DynamicPaperGenerator:
@@ -23,7 +26,11 @@ class DynamicPaperGenerator:
             self.research_config = yaml.safe_load(f)
             
         # Initialize Anthropic client
-        self.client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+        self.client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY_SSA"))
+        
+        # Set ANTHROPIC_API_KEY from ANTHROPIC_API_KEY_SSA for claude_code_sdk
+        if os.getenv("ANTHROPIC_API_KEY_SSA"):
+            os.environ["ANTHROPIC_API_KEY"] = os.getenv("ANTHROPIC_API_KEY_SSA")
     
     def load_analysis_results(self) -> str:
         """Load analysis results from the report."""
@@ -190,32 +197,116 @@ Generate complete LaTeX code that compiles without errors.
         else:
             return False, "PDF generation failed."
     
-    def save_paper_with_feedback(self, max_attempts=3):
-        """Generate and save the paper, retrying with LLM feedback if LaTeX fails to compile."""
-        compile_error_feedback: Optional[str] = None
-        for attempt in range(1, max_attempts + 1):
-            print(f"\n[Attempt {attempt}] Generating paper content using LLM...")
-            latex_content = self.generate_paper_content(compile_error_feedback)
-            latex_path = self.output_path / "dynamic_paper.tex"
-            with open(latex_path, 'w', encoding='utf-8') as f:
-                f.write(latex_content)
-            bib_content = self.extract_bibliography(latex_content)
-            bib_path = self.output_path / "dynamic_references.bib"
-            with open(bib_path, 'w', encoding='utf-8') as f:
-                f.write(bib_content)
-            print(f"LaTeX paper generated: {latex_path}")
-            print(f"Bibliography file created: {bib_path}")
-            success, error_message = self.try_compile_latex(latex_path)
-            if success:
-                print(f"PDF generated successfully: {latex_path.with_suffix('.pdf')}")
-                return latex_path
-            else:
-                print(f"LaTeX compilation failed (attempt {attempt}):\n{error_message[:1000]}")
-                compile_error_feedback = error_message
-        print("\nFailed to generate a compilable LaTeX file after several attempts.")
-        return None
+    async def debug_latex_with_agent(self, latex_path: Path, error_message: str) -> bool:
+        """Use Claude Code agent to debug and fix LaTeX compilation errors."""
+        prompt = f"""You are tasked with debugging and fixing LaTeX compilation errors for an academic paper.
+
+The LaTeX file is located at: {latex_path}
+The bibliography file is at: {self.output_path / "dynamic_references.bib"}
+
+Compilation error:
+{error_message}
+
+Your task is to:
+1. Read and analyze the LaTeX file
+2. Identify the compilation errors
+3. Fix the LaTeX syntax, package conflicts, or other issues
+4. Ensure the paper compiles successfully to PDF
+5. Make minimal changes to preserve the content and structure
+6. Test the compilation after making fixes
+
+Please debug and fix all compilation errors automatically."""
+
+        formatter.print("Starting agent-based LaTeX debugging...", MessageType.PROGRESS)
+        
+        # Configure Claude Code SDK options
+        options = ClaudeCodeOptions(
+            max_turns=8,
+            system_prompt="You are a LaTeX expert specializing in academic paper compilation. You have access to read and write files, execute bash commands, and use all available tools.",
+            cwd=Path.cwd(),
+            allowed_tools=["Read", "Write", "Bash", "Edit", "MultiEdit"],
+            permission_mode="acceptEdits"
+        )
+        
+        try:
+            async for message in query(prompt=prompt, options=options):
+                # Format agent messages similar to generate_and_execute_analysis.py
+                message_str = str(message)
+                
+                if "ResultMessage(" in message_str:
+                    formatter.print("LaTeX debugging completed", MessageType.SUCCESS)
+                elif "SystemMessage(" in message_str:
+                    # Extract meaningful system messages
+                    if "content=" in message_str:
+                        start = message_str.find("content='") + 9
+                        end = message_str.find("'", start)
+                        if start > 8 and end > start:
+                            content = message_str[start:end]
+                            formatter.print(content, MessageType.SYSTEM)
+                else:
+                    # Handle regular agent messages
+                    if hasattr(message, 'content'):
+                        if isinstance(message.content, list):
+                            for block in message.content:
+                                if hasattr(block, 'text'):
+                                    text = block.text.strip()
+                                    if text:
+                                        formatter.print(text, MessageType.INFO)
+                        else:
+                            text = str(message.content).strip()
+                            if text:
+                                formatter.print(text, MessageType.INFO)
+
+            # Test if the LaTeX file compiles now
+            success, _ = self.try_compile_latex(latex_path)
+            return success
+            
+        except Exception as e:
+            formatter.print(f"Error in agent-based LaTeX debugging: {e}", MessageType.ERROR)
+            return False
+
+    def save_paper_with_agent_debugging(self):
+        """Generate paper and use Claude Code agent for debugging if compilation fails."""
+        formatter.print("Generating initial paper draft using LLM...", MessageType.PROGRESS)
+        
+        # Generate initial draft
+        latex_content = self.generate_paper_content()
+        latex_path = self.output_path / "dynamic_paper.tex"
+        with open(latex_path, 'w', encoding='utf-8') as f:
+            f.write(latex_content)
+            
+        bib_content = self.extract_bibliography(latex_content)
+        bib_path = self.output_path / "dynamic_references.bib"
+        with open(bib_path, 'w', encoding='utf-8') as f:
+            f.write(bib_content)
+            
+        formatter.print(f"LaTeX paper generated: {latex_path}", MessageType.SUCCESS)
+        formatter.print(f"Bibliography file created: {bib_path}", MessageType.SUCCESS)
+        
+        # Try initial compilation
+        success, error_message = self.try_compile_latex(latex_path)
+        if success:
+            formatter.print(f"PDF generated successfully: {latex_path.with_suffix('.pdf')}", MessageType.SUCCESS)
+            return latex_path
+        else:
+            formatter.print(f"LaTeX compilation failed. Starting agent-based debugging...", MessageType.WARNING)
+            formatter.print(f"Compilation error: {error_message[:500]}...", MessageType.ERROR)
+            
+            # Use agent to debug and fix
+            try:
+                debug_success = asyncio.run(self.debug_latex_with_agent(latex_path, error_message))
+                if debug_success:
+                    formatter.print(f"PDF generated successfully after debugging: {latex_path.with_suffix('.pdf')}", MessageType.SUCCESS)
+                    return latex_path
+                else:
+                    formatter.print("Agent-based debugging could not resolve all compilation errors.", MessageType.ERROR)
+                    return None
+                    
+            except Exception as e:
+                formatter.print(f"Error during agent-based debugging: {e}", MessageType.ERROR)
+                return None
 
 
 if __name__ == "__main__":
     generator = DynamicPaperGenerator()
-    generator.save_paper_with_feedback()
+    generator.save_paper_with_agent_debugging()
