@@ -9,4 +9,10 @@ wheels/
 # Virtual environments
 .venv
 
+# Environment variables
+.env
+
 data
+data.zip
+
+outputs/
