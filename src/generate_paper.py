@@ -159,21 +159,31 @@ Generate complete LaTeX code that compiles without errors.
         return "\n\n".join(bib_entries)
     
     def try_compile_latex(self, latex_path: Path):
-        """Try to compile LaTeX file to PDF. Returns (success: bool, error_message: str)."""
+        """Try to compile LaTeX file to PDF with BibTeX. Returns (success: bool, error_message: str)."""
         try:
             subprocess.run(['pdflatex', '--version'], capture_output=True, check=True)
         except Exception as e:
             return False, "pdflatex not found. Skipping PDF compilation."
-        # Compile LaTeX (run twice for references)
-        for i in range(2):
+        # Get the base name without extension
+        base_name = latex_path.stem
+        # LaTeX compilation sequence for BibTeX
+        commands = [
+            ["pdflatex", "-interaction=nonstopmode", f"{base_name}.tex"],
+            ["bibtex", base_name],
+            ["pdflatex", "-interaction=nonstopmode", f"{base_name}.tex"],
+            ["pdflatex", "-interaction=nonstopmode", f"{base_name}.tex"],
+        ]
+        for i, command in enumerate(commands):
+            print(f"Running: {' '.join(command)}")
             result = subprocess.run(
-                ['pdflatex', '-interaction=nonstopmode', latex_path.name],
+                command,
                 cwd=self.output_path,
                 capture_output=True,
                 text=True
             )
             if result.returncode != 0:
-                return False, result.stderr[-2000:]  # Return last 2000 chars of error
+                error_msg = result.stderr[-2000:] if result.stderr else result.stdout[-2000:]
+                return False, f"Command {' '.join(command)} failed: {error_msg}"
         pdf_path = latex_path.with_suffix('.pdf')
         if pdf_path.exists():
             return True, ""
