@@ -3,41 +3,111 @@ research_proposals:
   title: 'Digital Technology and Social Trust: Examining the Role of Online Social
     Capital in American Society'
   objective: To investigate how Americans' engagement with digital technology and
-    social media influences their levels of interpersonal and institutional trust,
-    mediated by online social capital formation
-  theoretical_background: Drawing on Putnam's social capital theory and its digital
-    extension by Wellman et al., this study examines how online interactions reshape
-    traditional trust formation mechanisms. The research builds on cybersocial transformation
-    theory, which suggests that digital spaces create new forms of social connection
-    and trust dynamics.
+    online social networks influences their levels of interpersonal and institutional
+    trust, with particular attention to generational differences and digital capability
+    levels
+  theoretical_background: 'The study integrates three theoretical frameworks: (1)
+    Putnam''s social capital theory and Wellman''s networked individualism, (2) digital
+    capability theory from Khin & Ho (2018), which emphasizes the distinction between
+    mere technology use and effective digital engagement, and (3) the digital natives
+    paradigm critique by Margaryan et al. (2010), suggesting that technological competence
+    varies independently of age. This integrated approach helps explain how digital
+    engagement transforms traditional trust formation mechanisms while accounting
+    for individual differences in digital capability.'
   hypotheses:
-  - Greater engagement with digital technology and social media will be negatively
-    associated with interpersonal trust levels, but this relationship will be moderated
-    by the quality of online social capital
+  - 'H1: The relationship between digital engagement and social trust will be moderated
+    by individual digital capability levels'
+  - 'H2: Online social capital formation will mediate the relationship between digital
+    engagement and institutional trust more strongly for individuals with higher digital
+    capability scores'
+  - 'H3: The positive relationship between digital community participation and generalized
+    trust will be stronger for activities involving reciprocal resource sharing versus
+    passive consumption'
+  - 'H4: Digital social support networks will have stronger effects on trust formation
+    in urban versus rural environments'
   variables:
     dependent:
     - Q60
-    - btigovindex
+    - Q58
     - Q60
     independent:
-    - Q44
-    - btiintegration
-    - v2x_cspart
+    - Q207
+    - Q95
+    - v2psplats
+    - Q275A
+    - Q102R
     controls:
     - Q262
     - Q275A
     - Q288R
     - H_URBRURAL
-    - Q98R
-    - Q94R
+    - Q215
+    - Q171
+    - Q44
+    - Q61
     mediators:
     - Q207
-    - Q105R
-  analytical_approach: Structural equation modeling (SEM) to test direct and indirect
-    effects, with bootstrapped confidence intervals for testing mediation. Multi-level
-    modeling will account for regional clustering effects.
+    - Q208
+    - Q118
+    - Q102R
+  analytical_approach: Multi-level structural equation modeling (SEM) with nested
+    data structure (individuals within platforms within regions). Latent class analysis
+    to identify digital engagement patterns. Moderated mediation analysis using bootstrapped
+    confidence intervals. Longitudinal component tracking trust evolution over 6-month
+    period.
+  literature_gaps:
+  - Most digital technology studies focus on usage frequency rather than capability
+    and effectiveness
+  - Limited research on how digital capability moderates social capital formation
+  - Lack of empirical work distinguishing between active and passive digital engagement
+    effects on trust
+  - Few studies examining platform-specific features' influence on trust formation
+  - Need for more nuanced understanding of how geographic and demographic factors
+    interact with digital social capital formation
+  referenced_papers:
+  - title: 'Digital Entrepreneurship: Toward a Digital Technology Perspective of Entrepreneurship'
+    authors:
+    - Satish Nambisan
+    year: 2016
+    doi: https://doi.org/10.1111/etap.12254
+    citations: 2044
+  - title: 'Understanding the role of digital technologies in education: A review'
+    authors:
+    - Abid Haleem
+    - Mohd Javaid
+    - Mohammad Asim Qadri
+    year: 2022
+    doi: https://doi.org/10.1016/j.susoc.2022.05.004
+    citations: 1659
+  - title: Digital technology and COVID-19
+    authors:
+    - Daniel Shu Wei Ting
+    - Lawrence Carin
+    - Victor J. Dzau
+    year: 2020
+    doi: https://doi.org/10.1038/s41591-020-0824-5
+    citations: 1389
+  - title: Digital technologies in the public-health response to COVID-19
+    authors:
+    - Jobie Budd
+    - Benjamin S. Miller
+    - Erin Manning
+    year: 2020
+    doi: https://doi.org/10.1038/s41591-020-1011-4
+    citations: 1093
+  - title: The impact of digital technology and Industry 4.0 on the ripple effect
+      and supply chain risk analytics
+    authors:
+    - Dmitry Ivanov
+    - Alexandre Dolgui
+    - Boris Sokolov
+    year: 2018
+    doi: https://doi.org/10.1080/00207543.2018.1488086
+    citations: 1523
 metadata:
   dataset: WVS Wave 7 (2017-2022)
   country: United States (B_COUNTRY = 840)
   sample_weight: W_WEIGHT
   note: All analyses should apply population weights and handle missing values appropriately
+  literature_informed: true
+  search_strategy: Multi-query search with reformulation, literature-based refinement
