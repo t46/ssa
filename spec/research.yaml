@@ -1,37 +1,39 @@
 research_proposals:
 - id: 1
   title: 'Digital Technology and Social Trust: Examining the Role of Online Social
-    Capital in American Society'
-  objective: To investigate how Americans' engagement with digital technology and
-    social media influences their levels of interpersonal and institutional trust,
-    with particular attention to generational differences, digital capability levels,
-    and the quality of online interactions
-  theoretical_background: The study integrates Putnam's social capital theory with
-    recent digital capability frameworks (Khin & Ho, 2018) and digital natives theory
-    (Margaryan et al., 2010). It examines how digital transformation affects social
-    trust formation through the lens of technological affordances and digital competencies,
-    while considering the differential impacts across age groups and usage patterns
-    identified in recent literature (Orben & Przybylski, 2019)
+    Capital in Shaping American Values'
+  objective: To investigate how different patterns of digital technology engagement
+    influence interpersonal trust and civic participation among American adults, while
+    accounting for digital capability and technological competence
+  theoretical_background: This study integrates Putnam's social capital theory with
+    digital capability frameworks (Khin & Ho, 2018) and digital transformation literature.
+    Recent research suggests that digital technologies create differentiated forms
+    of social engagement depending on users' digital competencies and usage patterns
+    (Margaryan et al., 2010). The framework acknowledges that digital spaces may both
+    enhance and diminish social capital through distinct mechanisms, moving beyond
+    simple positive/negative dichotomies to examine specific technological affordances
+    and their social impacts.
   hypotheses:
-  - 'H1: Higher levels of digital capability (not just usage frequency) will be positively
-    associated with online social capital formation'
-  - 'H2: The relationship between digital technology use and interpersonal trust will
-    be moderated by users'' digital competency levels'
-  - 'H3: Quality of online interactions will have a stronger positive effect on trust
-    formation than quantity of digital engagement'
-  - 'H4: Age-related differences in digital capability will explain variance in trust
-    outcomes beyond mere usage patterns'
+  - 'H1: Higher levels of passive social media consumption will be negatively associated
+    with generalized social trust'
+  - 'H2: Active digital engagement (content creation, community moderation) will be
+    positively associated with civic participation'
+  - 'H3: Digital capability (technological competence and literacy) will moderate
+    the relationship between online engagement and social trust'
+  - 'H4: The negative relationship between passive social media use and trust will
+    be stronger for users with lower participation in local organizations'
   variables:
     dependent:
     - Q60
-    - btigovindex
-    - Q60
+    - v2x_cspart
+    - v2x_partipdem
     independent:
-    - Q44
-    - Y003
+    - Q207
     - btiintegration
+    - Y003
     - Q220
-    - Q275
+    - Q61
+    - Q207
     controls:
     - Q262
     - Q260
@@ -39,22 +41,26 @@ research_proposals:
     - Q288R
     - H_URBRURAL
     - Q98R
-    - Q54
     - Q44
+    - Q292N
     mediators:
-    - Q207
-    - Q67
-    - Q19
-  analytical_approach: 'Mixed-method approach combining: 1) Structural equation modeling
-    (SEM) for testing direct and indirect effects, 2) Latent class analysis to identify
-    distinct digital user profiles, 3) Hierarchical linear modeling for nested regional
-    effects, 4) Qualitative analysis of online interaction patterns'
+    - Q105R
+    - Q208
+    - E1_LITERACY
+  analytical_approach: Multi-level structural equation modeling (SEM) with latent
+    variable interactions to test moderation effects. Complementary qualitative analysis
+    of digital interaction patterns through content analysis of participant activity
+    logs. Time-lagged analysis to establish temporal precedence in key relationships.
   literature_gaps:
-  - Limited research on how digital capability (versus mere usage) affects trust formation
-  - Lack of studies examining age-related differences in digital social capital formation
-  - Need for more nuanced understanding of quality versus quantity in digital engagement
-  - Insufficient investigation of platform-specific effects on trust outcomes
-  - Limited integration of digital competency frameworks with social capital theory
+  - Previous studies have not adequately distinguished between passive and active
+    forms of digital engagement
+  - Limited research on how digital capability moderates social capital formation
+    online
+  - Need for more nuanced understanding of how different types of online activities
+    affect social trust
+  - Lack of integration between digital capability frameworks and social capital theory
+  - Limited longitudinal evidence on causal relationships between digital engagement
+    and social outcomes
   referenced_papers:
   - title: 'Digital Entrepreneurship: Toward a Digital Technology Perspective of Entrepreneurship'
     authors:

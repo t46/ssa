@@ -231,8 +231,10 @@ Generate complete LaTeX code that compiles without errors.
             subprocess.run(['pdflatex', '--version'], capture_output=True, check=True)
         except Exception as e:
             return False, "pdflatex not found. Skipping PDF compilation."
+        
         # Get the base name without extension
         base_name = latex_path.stem
+        
         # LaTeX compilation sequence for BibTeX
         commands = [
             ["pdflatex", "-interaction=nonstopmode", f"{base_name}.tex"],
@@ -240,6 +242,10 @@ Generate complete LaTeX code that compiles without errors.
             ["pdflatex", "-interaction=nonstopmode", f"{base_name}.tex"],
             ["pdflatex", "-interaction=nonstopmode", f"{base_name}.tex"],
         ]
+        
+        final_error_message = ""
+        critical_failure = False
+        
         for i, command in enumerate(commands):
             print(f"Running: {' '.join(command)}")
             result = subprocess.run(
@@ -248,14 +254,35 @@ Generate complete LaTeX code that compiles without errors.
                 capture_output=True,
                 text=True
             )
+            
             if result.returncode != 0:
-                error_msg = result.stderr[-2000:] if result.stderr else result.stdout[-2000:]
-                return False, f"Command {' '.join(command)} failed: {error_msg}"
+                error_msg = result.stderr[-1000:] if result.stderr else result.stdout[-1000:]
+                final_error_message += f"Command {' '.join(command)} failed: {error_msg}\n"
+                
+                # BibTeX failure is often non-critical (especially with few references)
+                if command[0] == "bibtex":
+                    print(f"Warning: BibTeX failed, but continuing compilation...")
+                    continue
+                
+                # First pdflatex failure is critical
+                if i == 0:
+                    critical_failure = True
+                    break
+                
+                # For later pdflatex runs, check if PDF was already created
+                pdf_path = latex_path.with_suffix('.pdf')
+                if not pdf_path.exists():
+                    critical_failure = True
+                    break
+        
+        # Final success check: PDF must exist
         pdf_path = latex_path.with_suffix('.pdf')
         if pdf_path.exists():
+            if final_error_message:
+                print(f"Warning: PDF generated with some non-critical errors: {final_error_message[:500]}")
             return True, ""
         else:
-            return False, "PDF generation failed."
+            return False, final_error_message or "PDF generation failed."
     
     async def debug_latex_with_agent(self, latex_path: Path, error_message: str) -> bool:
         """Use Claude Code agent to debug and fix LaTeX compilation errors."""
@@ -281,7 +308,7 @@ Please debug and fix all compilation errors automatically."""
         
         # Configure Claude Code SDK options
         options = ClaudeCodeOptions(
-            max_turns=8,
+            max_turns=12, # Increased max_turns for more detailed debugging
             system_prompt="You are a LaTeX expert specializing in academic paper compilation. You have access to read and write files, execute bash commands, and use all available tools.",
             cwd=Path.cwd(),
             allowed_tools=["Read", "Write", "Bash", "Edit", "MultiEdit"],
@@ -341,6 +368,32 @@ Please debug and fix all compilation errors automatically."""
             formatter.print(f"Error in agent-based LaTeX debugging: {e}", MessageType.ERROR)
             return False
 
+    def cleanup_latex_file(self, latex_path: Path) -> bool:
+        """Clean up common LaTeX formatting issues."""
+        try:
+            with open(latex_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            
+            # Remove literal \n characters (should be actual newlines)
+            content = content.replace('\\n', '\n')
+            
+            # Fix double backslashes that aren't meant to be line breaks
+            content = re.sub(r'\\\\(?![a-zA-Z*])', r'\\', content)
+            
+            # Remove trailing \n at the very end
+            content = content.rstrip('\n') + '\n'
+            
+            # Ensure proper line endings
+            content = content.replace('\r\n', '\n').replace('\r', '\n')
+            
+            with open(latex_path, 'w', encoding='utf-8') as f:
+                f.write(content)
+            
+            return True
+        except Exception as e:
+            formatter.print(f"Error cleaning LaTeX file: {e}", MessageType.ERROR)
+            return False
+
     def save_paper_with_agent_debugging(self):
         """Generate paper and use Claude Code agent for debugging if compilation fails."""
         formatter.print("Generating initial paper draft using LLM...", MessageType.PROGRESS)
@@ -350,6 +403,9 @@ Please debug and fix all compilation errors automatically."""
         latex_path = self.output_path / "dynamic_paper.tex"
         with open(latex_path, 'w', encoding='utf-8') as f:
             f.write(latex_content)
+        
+        # Clean up the LaTeX file
+        self.cleanup_latex_file(latex_path)
             
         bib_content = self.extract_bibliography(latex_content)
         bib_path = self.output_path / "dynamic_references.bib"
@@ -372,14 +428,35 @@ Please debug and fix all compilation errors automatically."""
             try:
                 debug_success = asyncio.run(self.debug_latex_with_agent(latex_path, error_message))
                 if debug_success:
-                    formatter.print(f"PDF generated successfully after debugging: {latex_path.with_suffix('.pdf')}", MessageType.SUCCESS)
-                    return latex_path
+                    # Try compilation again after debugging
+                    success, _ = self.try_compile_latex(latex_path)
+                    if success:
+                        formatter.print(f"PDF generated successfully after debugging: {latex_path.with_suffix('.pdf')}", MessageType.SUCCESS)
+                        return latex_path
+                    else:
+                        formatter.print("Agent fixed some issues but compilation still failed.", MessageType.WARNING)
+                        # Check if PDF exists anyway (sometimes it's generated despite errors)
+                        pdf_path = latex_path.with_suffix('.pdf')
+                        if pdf_path.exists():
+                            formatter.print(f"PDF was generated despite errors: {pdf_path}", MessageType.SUCCESS)
+                            return latex_path
+                        return None
                 else:
                     formatter.print("Agent-based debugging could not resolve all compilation errors.", MessageType.ERROR)
+                    # Check if PDF exists anyway
+                    pdf_path = latex_path.with_suffix('.pdf')
+                    if pdf_path.exists():
+                        formatter.print(f"PDF was generated despite debugging failure: {pdf_path}", MessageType.SUCCESS)
+                        return latex_path
                     return None
                     
             except Exception as e:
                 formatter.print(f"Error during agent-based debugging: {e}", MessageType.ERROR)
+                # Check if PDF exists anyway
+                pdf_path = latex_path.with_suffix('.pdf')
+                if pdf_path.exists():
+                    formatter.print(f"PDF was generated despite error: {pdf_path}", MessageType.SUCCESS)
+                    return latex_path
                 return None
 
 
