@@ -31,6 +31,8 @@ https://www.worldvaluessurvey.org/WVSDocumentationWV7.jsp から下記データ�
 
 1. `F00010738-WVS-7_Master_Questionnaire_2017-2020_English.pdf` を読み、それを元に米国の人々の価値観に関して社会科学者が関心を持ちそうな研究テーマを3案、LLMに提案させる。目的／理論背景／検証仮説を含めさせる。
 2. *目的→背景→仮説→分析指標* を YAML として spec/research.yaml に出力。
+3. 生成された研究アイデアを元に検索クエリを生成し、OpenAlex で論文を検索＆取得。
+4. 取得した論文をもとに研究アイデアをアップデート。
 
 
 **ステップ 4｜分析コード生成と実行**
