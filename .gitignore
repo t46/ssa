@@ -16,3 +16,5 @@ data
 data.zip
 
 outputs/
+
+.DS_Store

@@ -10,6 +10,7 @@ import subprocess
 from claude_code_sdk import query, ClaudeCodeOptions
 import asyncio
 from src.terminal_formatter import formatter, MessageType
+import re
 
 
 class DynamicPaperGenerator:
@@ -45,10 +46,44 @@ class DynamicPaperGenerator:
                     return f.read()
             return ""
     
+    def _extract_figure_descriptions(self, analysis_results: str) -> Dict[str, str]:
+        """Extract figure descriptions from analysis results."""
+        figure_descriptions = {}
+        
+        # Common patterns for different figure types
+        patterns = {
+            "correlation_matrix": "correlation matrix|correlation heatmap|variable correlations",
+            "descriptive_distributions": "distribution|histogram|density plot|descriptive statistics",
+            "hypothesis_1": "hypothesis 1|h1:|first hypothesis|digital engagement.*trust",
+            "hypothesis_2": "hypothesis 2|h2:|second hypothesis|moderation|digital capability",
+            "hypothesis_3": "hypothesis 3|h3:|third hypothesis|mediation|online social capital",
+            "hypothesis_4": "hypothesis 4|h4:|fourth hypothesis|platform type|platform differences"
+        }
+        
+        # Search for figure mentions in the analysis results
+        lines = analysis_results.lower().split('\n')
+        for i, line in enumerate(lines):
+            for fig_type, pattern in patterns.items():
+                if re.search(pattern, line, re.IGNORECASE):
+                    # Get context from surrounding lines
+                    context_start = max(0, i - 2)
+                    context_end = min(len(lines), i + 3)
+                    context = ' '.join(lines[context_start:context_end])
+                    figure_descriptions[fig_type] = context[:200]  # Limit length
+        
+        return figure_descriptions
+    
     def generate_paper_content(self, compile_error_feedback: Optional[str] = None) -> str:
         """Generate paper content dynamically using LLM, with optional compile error feedback."""
         # Load analysis results
         analysis_results = self.load_analysis_results()
+        
+        # Get list of actual figure files
+        figure_files = sorted(self.output_path.glob("*.png"))
+        figure_names = [f.name for f in figure_files]
+        
+        # Create a mapping of figure descriptions from the analysis results
+        figure_mapping = self._extract_figure_descriptions(analysis_results)
         
         # Create prompt
         prompt = f"""Generate a complete academic paper in LaTeX format based on the following research and analysis results.
@@ -58,6 +93,12 @@ Research Configuration:
 
 Analysis Results:
 {analysis_results}
+
+Available Figure Files:
+{json.dumps(figure_names, indent=2)}
+
+Figure Descriptions from Analysis:
+{json.dumps(figure_mapping, indent=2)}
 """
         if compile_error_feedback:
             prompt += f"\n\nThe previous LaTeX file failed to compile with the following error(s):\n{compile_error_feedback}\nPlease fix these errors and regenerate the LaTeX code. Only output the corrected LaTeX code."
@@ -78,8 +119,27 @@ The paper should include:
 Use professional academic writing style. Include:
 - Proper citations (Author, Year)
 - Tables for regression results
-- References to figures (stored as research1_*.png, research2_*.png, etc.)
+- Include all figures listed above in appropriate sections using \includegraphics{filename} (without path)
+- Reference figures appropriately in the text (e.g., "As shown in Figure 1...")
 - Statistical notation (p-values, coefficients, R-squared)
+
+IMPORTANT FIGURE INSERTION REQUIREMENTS:
+1. Include ALL the PNG figures listed above in the paper at appropriate locations
+2. Each figure should have:
+   - A descriptive caption that explains what the figure shows
+   - A reference in the main text before the figure appears
+   - Proper LaTeX figure environment with label for cross-referencing
+3. Match figures to their content:
+   - correlation_matrix.png: Use in methodology or initial results section
+   - descriptive_distributions.png: Use in descriptive statistics section
+   - hypothesis_X_analysis.png: Use in the corresponding hypothesis testing section
+4. Example figure insertion:
+   \begin{figure}[htbp]
+   \centering
+   \includegraphics[width=0.8\textwidth]{hypothesis_1_analysis.png}
+   \caption{Analysis results for Hypothesis 1 showing the relationship between digital engagement and social trust}
+   \label{fig:hypothesis1}
+   \end{figure}
 
 Generate complete LaTeX code that compiles without errors.
 """
@@ -237,12 +297,28 @@ Please debug and fix all compilation errors automatically."""
                     formatter.print("LaTeX debugging completed", MessageType.SUCCESS)
                 elif "SystemMessage(" in message_str:
                     # Extract meaningful system messages
-                    if "content=" in message_str:
-                        start = message_str.find("content='") + 9
-                        end = message_str.find("'", start)
-                        if start > 8 and end > start:
-                            content = message_str[start:end]
-                            formatter.print(content, MessageType.SYSTEM)
+                    content_found = False
+                    
+                    # Try multiple patterns to extract content
+                    import re
+                    patterns = [
+                        (r"content='([^']*)'", 1),  # content='...'
+                        (r'content="([^"]*)"', 1),  # content="..."
+                        (r"data={'[^']*':\s*'([^']*)'", 1),  # data={'type': '...'}
+                        (r"subtype='([^']*)'", 1),  # subtype='...'
+                    ]
+                    
+                    for pattern, group in patterns:
+                        match = re.search(pattern, message_str)
+                        if match:
+                            content = match.group(group)
+                            if content and content.strip():
+                                formatter.print(content, MessageType.SYSTEM)
+                                content_found = True
+                                break
+                    
+                    if not content_found:
+                        formatter.print("System message received", MessageType.SYSTEM)
                 else:
                     # Handle regular agent messages
                     if hasattr(message, 'content'):

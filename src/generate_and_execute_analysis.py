@@ -100,17 +100,36 @@ class AgentBasedWVSAnalysis:
             if hasattr(message, 'content'):
                 content = str(message.content)
                 formatter.print_system_message(content)
+            elif hasattr(message, 'data') and isinstance(message.data, dict):
+                # Handle SystemMessage with data attribute
+                content = message.data.get('content', str(message))
+                formatter.print_system_message(content)
             else:
                 # Extract meaningful parts from string representation
                 if "SystemMessage(" in message_str:
-                    # Try to extract the content between parentheses
-                    start = message_str.find("content='") + 9
-                    end = message_str.find("'", start)
-                    if start > 8 and end > start:
-                        content = message_str[start:end]
-                        formatter.print_system_message(content)
-                    else:
-                        formatter.print_system_message(message_str[:100] + "..." if len(message_str) > 100 else message_str)
+                    # Try multiple patterns to extract content
+                    patterns = [
+                        (r"content='([^']*)'", 1),  # content='...'
+                        (r'content="([^"]*)"', 1),  # content="..."
+                        (r"data={'[^']*':\s*'([^']*)'", 1),  # data={'type': '...'}
+                        (r"subtype='([^']*)'", 1),  # subtype='...'
+                    ]
+                    
+                    content_found = False
+                    for pattern, group in patterns:
+                        import re
+                        match = re.search(pattern, message_str)
+                        if match:
+                            content = match.group(group)
+                            if content and content.strip():
+                                formatter.print_system_message(content)
+                                content_found = True
+                                break
+                    
+                    if not content_found:
+                        # As a last resort, just use the message content after filtering out class info
+                        # Skip the full SystemMessage object representation
+                        formatter.print_system_message("System message received")
                 else:
                     formatter.print_system_message(message_str)
         except Exception as e:
@@ -174,15 +193,21 @@ class AgentBasedWVSAnalysis:
         """Generate and execute analysis using Claude Code SDK agent."""
         # Create a comprehensive prompt for the agent
         var_info = []
-        for var_type, var_list in research["variables"].items():
+        variables = research.get("proposed_methodology", {}).get("variables", {})
+        for var_type, var_list in variables.items():
             if var_list:
-                var_info.append(f"{var_type}: {', '.join(var_list)}")
+                if isinstance(var_list, list):
+                    var_info.append(f"{var_type}: {', '.join(var_list)}")
+                else:
+                    var_info.append(f"{var_type}: {var_list}")
 
         # Get all variables for preprocessing
         all_vars = []
-        for var_type, var_list in research["variables"].items():
+        for var_type, var_list in variables.items():
             if isinstance(var_list, list):
                 all_vars.extend(var_list)
+            elif isinstance(var_list, str):
+                all_vars.append(var_list)
 
         # Preprocess data
         df = self.preprocess_data(all_vars)
@@ -219,12 +244,23 @@ Your task is to:
 6. Create a Python script that generates results as a dictionary with keys: 'statistics', 'visualizations', 'findings'
 7. Handle any errors or issues that arise during analysis
 8. Save all results and visualizations to the outputs/ directory
+9. For each visualization, include descriptive filenames that indicate their content:
+   - correlation_matrix.png for correlation heatmaps
+   - descriptive_distributions.png for variable distributions
+   - hypothesis_X_analysis.png for hypothesis-specific results
+10. In your results dictionary, include a 'figure_descriptions' key that maps figure filenames to their descriptions
 
 Use weighted statistics where appropriate (using the 'weight' column).
 The data includes all specified variables plus a 'weight' column for population weighting.
 
 Please create and execute a complete analysis pipeline. If you encounter any errors, debug and fix them automatically.
 Save your final analysis script as outputs/research_{research_id + 1}_analysis.py
+
+IMPORTANT: When creating visualizations:
+1. Use descriptive titles and axis labels
+2. Save with meaningful filenames that indicate the content
+3. Include proper figure titles that explain what is being shown
+4. Reference the research hypothesis number where applicable
 """
 
         analysis_log = []
@@ -280,6 +316,8 @@ Save your final analysis script as outputs/research_{research_id + 1}_analysis.p
                     "Path": Path,
                     "output_path": self.output_path,
                     "research_id": research_id,
+                    "os": os,
+                    "warnings": warnings,
                 }
 
                 with open(analysis_script_path, "r") as f:
@@ -294,12 +332,16 @@ Save your final analysis script as outputs/research_{research_id + 1}_analysis.p
 
             # If no results from script, create basic results from log
             if final_result is None:
+                # Check for generated figures
+                figure_files = sorted(self.output_path.glob("*.png"))
+                viz_list = [f.name for f in figure_files]
+                
                 final_result = {
                     "statistics": {
                         "analysis_completed": True,
                         "sample_size": len(df_clean),
                     },
-                    "visualizations": [],
+                    "visualizations": viz_list,
                     "findings": " ".join(analysis_log[-5:])
                     if analysis_log
                     else "Analysis completed by agent",
@@ -354,9 +396,12 @@ Save your final analysis script as outputs/research_{research_id + 1}_analysis.p
 
         # Get all variables
         all_vars = []
-        for var_list in research["variables"].values():
+        variables = research.get("proposed_methodology", {}).get("variables", {})
+        for var_list in variables.values():
             if isinstance(var_list, list):
                 all_vars.extend(var_list)
+            elif isinstance(var_list, str):
+                all_vars.append(var_list)
 
         # Calculate basic statistics
         for var in all_vars:
