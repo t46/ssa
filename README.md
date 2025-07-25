@@ -38,6 +38,12 @@ uv run pyright  # 型チェック
 
 ## クイックスタート
 
+### 1. データの準備
+
+[Google Driveからデータをダウンロード](https://drive.google.com/file/d/1QmQXt5N6XBcXlYkNWd-5-Ocx6rqXvUdE/view?usp=drive_link)し、`data/`ディレクトリに配置してください。
+
+### 2. パイプラインの実行
+
 ```bash
 # パイプライン全体の実行
 uv run run_pipeline.py
