@@ -1,4 +1,4 @@
-"""Generate LaTeX paper from analysis results - Dynamic version."""
+"""Generate LaTeX paper from analysis results."""
 import yaml
 import json
 from pathlib import Path
@@ -13,13 +13,13 @@ from src.terminal_formatter import formatter, MessageType
 import re
 
 
-class DynamicPaperGenerator:
-    """Generate academic paper in LaTeX format dynamically based on analysis results."""
+class PaperGenerator:
+    """Generate academic paper in LaTeX format based on analysis results."""
     
     def __init__(self):
         """Initialize paper generator with paths and data."""
         self.research_path = Path("spec/research.yaml")
-        self.report_path = Path("outputs/dynamic_analysis_report.md")
+        self.report_path = Path("outputs/analysis_report.md")
         self.output_path = Path("outputs")
         
         # Load configurations
@@ -39,7 +39,7 @@ class DynamicPaperGenerator:
             with open(self.report_path, 'r') as f:
                 return f.read()
         else:
-            # Fallback to original report if dynamic one doesn't exist
+            # Fallback to original report if main one doesn't exist
             fallback_path = self.output_path / 'analysis_report.md'
             if fallback_path.exists():
                 with open(fallback_path, 'r') as f:
@@ -74,7 +74,7 @@ class DynamicPaperGenerator:
         return figure_descriptions
     
     def generate_paper_content(self, compile_error_feedback: Optional[str] = None) -> str:
-        """Generate paper content dynamically using LLM, with optional compile error feedback."""
+        """Generate paper content using LLM, with optional compile error feedback."""
         # Load analysis results
         analysis_results = self.load_analysis_results()
         
@@ -289,7 +289,7 @@ Generate complete LaTeX code that compiles without errors.
         prompt = f"""You are tasked with debugging and fixing LaTeX compilation errors for an academic paper.
 
 The LaTeX file is located at: {latex_path}
-The bibliography file is at: {self.output_path / "dynamic_references.bib"}
+The bibliography file is at: {self.output_path / "references.bib"}
 
 Compilation error:
 {error_message}
@@ -400,7 +400,7 @@ Please debug and fix all compilation errors automatically."""
         
         # Generate initial draft
         latex_content = self.generate_paper_content()
-        latex_path = self.output_path / "dynamic_paper.tex"
+        latex_path = self.output_path / "paper.tex"
         with open(latex_path, 'w', encoding='utf-8') as f:
             f.write(latex_content)
         
@@ -408,7 +408,7 @@ Please debug and fix all compilation errors automatically."""
         self.cleanup_latex_file(latex_path)
             
         bib_content = self.extract_bibliography(latex_content)
-        bib_path = self.output_path / "dynamic_references.bib"
+        bib_path = self.output_path / "references.bib"
         with open(bib_path, 'w', encoding='utf-8') as f:
             f.write(bib_content)
             
@@ -461,5 +461,5 @@ Please debug and fix all compilation errors automatically."""
 
 
 if __name__ == "__main__":
-    generator = DynamicPaperGenerator()
+    generator = PaperGenerator()
     generator.save_paper_with_agent_debugging()

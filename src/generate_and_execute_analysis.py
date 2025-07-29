@@ -431,10 +431,10 @@ IMPORTANT: When creating visualizations:
 
     def generate_report(self, results: List[Dict[str, Any]]):
         """Generate analysis report."""
-        report_path = self.output_path / "dynamic_analysis_report.md"
+        report_path = self.output_path / "analysis_report.md"
 
         with open(report_path, "w") as f:
-            f.write("# WVS Wave 7 USA Data Analysis Results (Dynamic)\n\n")
+            f.write("# WVS Wave 7 USA Data Analysis Results\n\n")
             f.write(f"Dataset: {self.research_config['metadata']['dataset']}\n")
             f.write(f"Country: {self.research_config['metadata']['country']}\n")
             f.write(
