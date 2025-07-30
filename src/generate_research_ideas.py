@@ -224,7 +224,7 @@ Return only the JSON object without additional text."""
     
     try:
         response = client.messages.create(
-            model="claude-3-5-sonnet-20241022",
+            model="claude-sonnet-4-20250514",
             max_tokens=3000,
             temperature=0.3,
             messages=[{
@@ -322,7 +322,7 @@ Example structure:
     
     # Generate proposals using Claude
     response = client.messages.create(
-        model="claude-3-5-sonnet-20241022",
+        model="claude-sonnet-4-20250514",
         max_tokens=4000,
         temperature=0.7,
         messages=[{

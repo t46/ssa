@@ -193,7 +193,7 @@ IMPORTANT WIDTH CONTROL REQUIREMENTS TO PREVENT OVERFLOW:
         # Use streaming for long requests
         response_text = ""
         stream = self.client.messages.stream(
-            model="claude-3-7-sonnet-20250219",
+            model="claude-sonnet-4-20250514",
             max_tokens=24000,
             temperature=0.5,
             messages=[{
@@ -266,7 +266,7 @@ Return the outline as a structured JSON format with clear section breakdowns, ke
         # Use streaming for long requests
         response_text = ""
         stream = self.client.messages.stream(
-            model="claude-3-7-sonnet-20250219",
+            model="claude-sonnet-4-20250514",
             max_tokens=16000,
             temperature=0.3,
             messages=[{
@@ -356,7 +356,7 @@ Include appropriate LaTeX section commands (\\section{{}}, \\subsection{{}}).
         # Use streaming for long requests
         response_text = ""
         stream = self.client.messages.stream(
-            model="claude-3-7-sonnet-20250219",
+            model="claude-sonnet-4-20250514",
             max_tokens=20000,
             temperature=0.4,
             messages=[{
@@ -433,7 +433,7 @@ Generate the complete, publication-ready LaTeX document.
         # Use streaming for long requests
         response_text = ""
         stream = self.client.messages.stream(
-            model="claude-3-7-sonnet-20250219",
+            model="claude-sonnet-4-20250514",
             max_tokens=32000,
             temperature=0.3,
             messages=[{
@@ -845,11 +845,21 @@ The goal is a paper that compiles successfully with NO undefined references or m
             # Look for tabular environments not inside resizebox
             def wrap_wide_tables(match):
                 table_content = match.group(0)
-                if 'resizebox' not in table_content and 'footnotesize' not in table_content:
-                    # Add footnotesize to make table smaller
+                if 'resizebox' not in table_content:
+                    # Always apply resizebox for width control, regardless of footnotesize
+                    if 'footnotesize' not in table_content:
+                        # Add footnotesize if not present
+                        table_content = table_content.replace(
+                            '\\begin{tabular}', 
+                            '\\footnotesize\n\\begin{tabular}'
+                        )
+                    # Wrap entire tabular with resizebox
                     return table_content.replace(
                         '\\begin{tabular}', 
-                        '\\footnotesize\n\\begin{tabular}'
+                        '\\resizebox{\\textwidth}{!}{%\n\\begin{tabular}'
+                    ).replace(
+                        '\\end{tabular}',
+                        '\\end{tabular}\n}'
                     )
                 return table_content
             
