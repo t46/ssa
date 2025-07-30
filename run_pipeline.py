@@ -22,7 +22,7 @@ sys.path.insert(0, str(Path(__file__).parent / "src"))
 
 from generate_research_ideas import save_research_proposals
 from generate_and_execute_analysis import AgentBasedWVSAnalysis
-from generate_paper import DynamicPaperGenerator
+from generate_paper import PaperGenerator
 from terminal_formatter import formatter, MessageType
 
 
@@ -98,7 +98,7 @@ def step_5_generate_paper() -> bool:
     formatter.print("STEP 5: Generating academic paper", MessageType.SECTION)
     
     try:
-        generator = DynamicPaperGenerator()
+        generator = PaperGenerator()
         latex_path = generator.save_paper_with_agent_debugging()
         
         if latex_path:
