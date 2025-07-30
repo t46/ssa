@@ -248,6 +248,7 @@ Your task is to:
    - correlation_matrix.png for correlation heatmaps
    - descriptive_distributions.png for variable distributions
    - hypothesis_X_analysis.png for hypothesis-specific results
+   - ALL visualizations MUST be saved as PNG files (.png extension)
 10. In your results dictionary, include a 'figure_descriptions' key that maps figure filenames to their descriptions
 
 Use weighted statistics where appropriate (using the 'weight' column).
@@ -261,6 +262,7 @@ IMPORTANT: When creating visualizations:
 2. Save with meaningful filenames that indicate the content
 3. Include proper figure titles that explain what is being shown
 4. Reference the research hypothesis number where applicable
+5. ALWAYS save all visualizations as PNG files (.png extension) using plt.savefig() or similar
 """
 
         analysis_log = []

@@ -103,7 +103,7 @@ Figure Descriptions from Analysis:
         if compile_error_feedback:
             prompt += f"\n\nThe previous LaTeX file failed to compile with the following error(s):\n{compile_error_feedback}\nPlease fix these errors and regenerate the LaTeX code. Only output the corrected LaTeX code."
         else:
-            prompt += """
+            prompt += f"""
 The paper should include:
 1. Title that reflects all three research topics
 2. Abstract (150-200 words) summarizing all findings
@@ -119,9 +119,18 @@ The paper should include:
 Use professional academic writing style. Include:
 - Proper citations (Author, Year)
 - Tables for regression results
-- Include all figures listed above in appropriate sections using \includegraphics{filename} (without path)
+- Include all figures listed above in appropriate sections using \includegraphics{{filename}} (without path)
 - Reference figures appropriately in the text (e.g., "As shown in Figure 1...")
 - Statistical notation (p-values, coefficients, R-squared)
+
+CRITICAL REFERENCE REQUIREMENTS:
+1. ONLY use figure files that actually exist: {', '.join(figure_names)}
+2. DO NOT reference non-existent figures or create fictional figure names
+3. Every \includegraphics{{}} must reference an actual file from the list above
+4. Every \cite{{}} must have a corresponding entry in the bibliography
+5. Every \ref{{}} must have a corresponding \label{{}} in the document
+6. Every figure must have both \includegraphics and \label{{fig:...}} in the same figure environment
+7. Figure labels should match their content (e.g., \label{{fig:hypothesis1}} for hypothesis_1_analysis.png)
 
 IMPORTANT FIGURE INSERTION REQUIREMENTS:
 1. Include ALL the PNG figures listed above in the paper at appropriate locations
@@ -134,15 +143,52 @@ IMPORTANT FIGURE INSERTION REQUIREMENTS:
    - descriptive_distributions.png: Use in descriptive statistics section
    - hypothesis_X_analysis.png: Use in the corresponding hypothesis testing section
 4. Example figure insertion:
-   \begin{figure}[htbp]
+   \begin{{figure}}[htbp]
    \centering
-   \includegraphics[width=0.8\textwidth]{hypothesis_1_analysis.png}
-   \caption{Analysis results for Hypothesis 1 showing the relationship between digital engagement and social trust}
-   \label{fig:hypothesis1}
-   \end{figure}
+   \includegraphics[width=0.8\textwidth]{{hypothesis_1_analysis.png}}
+   \caption{{Analysis results for Hypothesis 1 showing the relationship between digital engagement and social trust}}
+   \label{{fig:hypothesis1}}
+   \end{{figure}}
 
-Generate complete LaTeX code that compiles without errors.
-"""
+IMPORTANT WIDTH CONTROL REQUIREMENTS TO PREVENT OVERFLOW:
+1. FIGURES:
+   - Always use width=0.8\textwidth or smaller (never exceed 0.9\textwidth)
+   - For small figures, consider width=0.6\textwidth
+   - Use \centering to center figures
+   - Example: \includegraphics[width=0.8\textwidth,keepaspectratio]{{filename.png}}
+
+2. TABLES:
+   - Use \resizebox{{\textwidth}}{{!}}{{...}} for wide tables
+   - Alternative: use \footnotesize or \small for table text
+   - Use tabularx package for auto-adjusting column widths
+   - Example for wide tables:
+     \begin{{table}}[htbp]
+     \centering
+     \footnotesize
+     \resizebox{{\textwidth}}{{!}}{{%
+     \begin{{tabular}}{{lccccc}}
+     ... table content ...
+     \end{{tabular}}
+     }}
+     \caption{{Table caption}}
+     \label{{tab:example}}
+     \end{{table}}
+
+3. EQUATIONS:
+   - Break long equations across multiple lines using align environment
+   - Use \\\\ for line breaks in equations
+   - Use proper indentation with &= for alignment
+   - Example:
+     \begin{{align}}
+     Y_i &= \beta_0 + \sum_{{j=1}}^{{k}} \beta_j X_{{ij}} + \varepsilon_i \\\\
+     &\quad + \text{{additional terms if needed}}
+     \end{{align}}
+
+4. GENERAL WIDTH MANAGEMENT:
+   - Never let any element exceed page margins
+   - Use \linewidth instead of \textwidth in nested environments
+   - Consider landscape orientation for very wide tables: \begin{{landscape}}...\end{{landscape}}
+   - Use \raggedright for text that might overflow"""
         
         # Use streaming for long requests
         response_text = ""
@@ -293,6 +339,11 @@ Requirements for {section_name} section:
 4. Use LaTeX formatting (subsections, equations, etc.)
 5. Ensure content flows logically from the outline
 6. Be comprehensive and detailed (aim for substantial content)
+7. PREVENT WIDTH OVERFLOW:
+   - Figures: use width=0.8\textwidth or smaller
+   - Tables: use \resizebox{{\textwidth}}{{!}}{{...}} for wide tables or \footnotesize
+   - Equations: break long equations with align environment and \\
+   - Never exceed page margins
 
 For Results section: Include statistical notation, p-values, coefficients, R-squared values
 For Methods section: Describe data collection, variables, analytical approach
@@ -360,6 +411,12 @@ Your task:
 5. Add any missing elements (abstract, references, etc.)
 6. Ensure proper LaTeX formatting and compilation compatibility
 7. Maintain academic writing standards and logical flow
+8. ENSURE WIDTH CONTROL throughout the document:
+   - All figures must use width=0.8\textwidth or smaller
+   - Wide tables must use \resizebox{{\textwidth}}{{!}}{{...}} or smaller fonts
+   - Long equations must be broken across lines with align environment
+   - No element should exceed page margins
+   - Add necessary packages: graphicx, tabularx, amsmath, pdflscape for layout control
 
 The final paper should include:
 - Complete LaTeX document structure (\\documentclass to \\end{{document}})
@@ -400,6 +457,83 @@ Generate the complete, publication-ready LaTeX document.
             
         return refined_content.strip()
     
+    def check_reference_issues(self, latex_path: Path) -> Dict[str, List[str]]:
+        """Check for reference issues in LaTeX file (missing figures, citations, etc.)."""
+        issues = {
+            "missing_figures": [],
+            "missing_citations": [],
+            "unused_figures": [],
+            "reference_warnings": []
+        }
+        
+        try:
+            with open(latex_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            
+            # Get list of actual figure files
+            figure_files = set(f.name for f in self.output_path.glob("*.png"))
+            
+            # Find all \includegraphics references
+            import re
+            graphics_matches = re.findall(r'\\includegraphics(?:\[[^\]]*\])?\{([^}]+)\}', content)
+            referenced_figures = set(graphics_matches)
+            
+            # Find missing figures
+            for fig in referenced_figures:
+                if fig not in figure_files:
+                    issues["missing_figures"].append(fig)
+            
+            # Find unused figures
+            for fig in figure_files:
+                if fig not in referenced_figures:
+                    issues["unused_figures"].append(fig)
+            
+            # Find all citations
+            citation_matches = re.findall(r'\\cite\{([^}]+)\}', content)
+            all_citations = set()
+            for citation_group in citation_matches:
+                # Handle multiple citations like \cite{ref1,ref2,ref3}
+                refs = [ref.strip() for ref in citation_group.split(',')]
+                all_citations.update(refs)
+            
+            # Check if bibliography exists
+            bib_path = self.output_path / "references.bib"
+            available_refs = set()
+            if bib_path.exists():
+                with open(bib_path, 'r', encoding='utf-8') as f:
+                    bib_content = f.read()
+                # Find all @article{key}, @book{key}, etc.
+                ref_matches = re.findall(r'@\w+\{([^,\s]+)', bib_content)
+                available_refs = set(ref_matches)
+            
+            # Find missing citations
+            for citation in all_citations:
+                if citation not in available_refs:
+                    issues["missing_citations"].append(citation)
+            
+            # Check for undefined references from previous compilation
+            log_path = latex_path.with_suffix('.log')
+            if log_path.exists():
+                with open(log_path, 'r', encoding='utf-8') as f:
+                    log_content = f.read()
+                
+                # Look for reference warnings
+                ref_warnings = re.findall(r'LaTeX Warning: Reference `([^\']+)\' on page \d+ undefined', log_content)
+                cite_warnings = re.findall(r'LaTeX Warning: Citation `([^\']+)\' on page \d+ undefined', log_content)
+                
+                issues["reference_warnings"].extend(ref_warnings)
+                issues["missing_citations"].extend(cite_warnings)
+            
+            # Remove duplicates
+            for key in issues:
+                issues[key] = list(set(issues[key]))
+            
+            return issues
+            
+        except Exception as e:
+            formatter.print(f"Error checking references: {e}", MessageType.ERROR)
+            return issues
+
     def extract_bibliography(self, latex_content: str) -> str:
         """Extract bibliography entries from LaTeX content."""
         # Look for bibliography in the LaTeX content
@@ -478,6 +612,7 @@ Generate the complete, publication-ready LaTeX document.
         
         final_error_message = ""
         critical_failure = False
+        reference_warnings = []
         
         for i, command in enumerate(commands):
             print(f"Running: {' '.join(command)}")
@@ -487,6 +622,13 @@ Generate the complete, publication-ready LaTeX document.
                 capture_output=True,
                 text=True
             )
+            
+            # Collect reference warnings from output
+            if result.stdout:
+                import re
+                ref_warnings = re.findall(r'LaTeX Warning: Reference `([^\']+)\' on page \d+ undefined', result.stdout)
+                cite_warnings = re.findall(r'LaTeX Warning: Citation `([^\']+)\' on page \d+ undefined', result.stdout)
+                reference_warnings.extend(ref_warnings + cite_warnings)
             
             if result.returncode != 0:
                 error_msg = result.stderr[-1000:] if result.stderr else result.stdout[-1000:]
@@ -511,38 +653,89 @@ Generate the complete, publication-ready LaTeX document.
         # Final success check: PDF must exist
         pdf_path = latex_path.with_suffix('.pdf')
         if pdf_path.exists():
-            if final_error_message:
+            # Report reference warnings even if compilation succeeded
+            if reference_warnings:
+                unique_warnings = list(set(reference_warnings))
+                warning_msg = f"PDF generated but with undefined references: {unique_warnings}"
+                formatter.print(warning_msg, MessageType.WARNING)
+                # Return warnings in error message for agent to fix
+                return True, f"REFERENCE_WARNINGS: {warning_msg}"
+            elif final_error_message:
                 print(f"Warning: PDF generated with some non-critical errors: {final_error_message[:500]}")
             return True, ""
         else:
             return False, final_error_message or "PDF generation failed."
     
     async def debug_latex_with_agent(self, latex_path: Path, error_message: str) -> bool:
-        """Use Claude Code agent to debug and fix LaTeX compilation errors."""
-        prompt = f"""You are tasked with debugging and fixing LaTeX compilation errors for an academic paper.
+        """Use Claude Code agent to debug and fix LaTeX compilation errors and reference issues."""
+        
+        # Check for reference issues first
+        reference_issues = self.check_reference_issues(latex_path)
+        
+        # Get list of actual figure files
+        figure_files = sorted(self.output_path.glob("*.png"))
+        figure_names = [f.name for f in figure_files]
+        
+        # Build comprehensive issue report
+        issue_summary = []
+        if reference_issues["missing_figures"]:
+            issue_summary.append(f"Missing figure files: {reference_issues['missing_figures']}")
+        if reference_issues["unused_figures"]:
+            issue_summary.append(f"Unused figure files available: {reference_issues['unused_figures']}")
+        if reference_issues["missing_citations"]:
+            issue_summary.append(f"Missing bibliography entries: {reference_issues['missing_citations']}")
+        if reference_issues["reference_warnings"]:
+            issue_summary.append(f"Undefined references: {reference_issues['reference_warnings']}")
+        
+        prompt = f"""You are tasked with debugging and fixing LaTeX compilation errors and reference issues for an academic paper.
 
 The LaTeX file is located at: {latex_path}
 The bibliography file is at: {self.output_path / "references.bib"}
 
-Compilation error:
+AVAILABLE FIGURE FILES:
+{json.dumps(figure_names, indent=2)}
+
+COMPILATION ERROR:
 {error_message}
 
+REFERENCE ISSUES DETECTED:
+{chr(10).join(issue_summary) if issue_summary else "No reference issues detected"}
+
 Your task is to:
-1. Read and analyze the LaTeX file
-2. Identify the compilation errors
-3. Fix the LaTeX syntax, package conflicts, or other issues
-4. Ensure the paper compiles successfully to PDF
-5. Make minimal changes to preserve the content and structure
+1. Read and analyze the LaTeX file and bibliography file
+2. Fix LaTeX syntax, package conflicts, or other compilation issues
+3. CRITICAL: Fix all reference issues:
+   - Replace missing figure references with existing figure files
+   - Remove references to non-existent figures or replace with available ones
+   - Add missing bibliography entries for cited references
+   - Remove citations to non-existent references or add proper bibliography entries
+   - Ensure all \\ref{{}} and \\cite{{}} commands point to existing targets
+
+4. REFERENCE FIXING GUIDELINES:
+   - For missing figures: Replace with similar available figures from the list above
+   - For missing citations: Either remove the citation or add a proper bibliography entry
+   - Use only the figure files that actually exist: {', '.join(figure_names)}
+   - Ensure all figure labels (\\label{{fig:...}}) match figure references (\\ref{{fig:...}})
+   - Ensure all citation keys in \\cite{{}} exist in references.bib
+
+5. Make minimal changes to preserve content and structure
 6. Test the compilation after making fixes
+7. Verify that all references resolve correctly
 
-Please debug and fix all compilation errors automatically."""
+The goal is a paper that compiles successfully with NO undefined references or missing figures."""
 
-        formatter.print("Starting agent-based LaTeX debugging...", MessageType.PROGRESS)
+        formatter.print("Starting agent-based LaTeX debugging with reference fixing...", MessageType.PROGRESS)
+        
+        # Show detected issues to user
+        if issue_summary:
+            formatter.print("Reference issues detected:", MessageType.WARNING)
+            for issue in issue_summary:
+                formatter.print(f"  - {issue}", MessageType.WARNING)
         
         # Configure Claude Code SDK options
         options = ClaudeCodeOptions(
-            max_turns=12, # Increased max_turns for more detailed debugging
-            system_prompt="You are a LaTeX expert specializing in academic paper compilation. You have access to read and write files, execute bash commands, and use all available tools.",
+            max_turns=15,  # Increased for reference fixing
+            system_prompt="You are a LaTeX expert specializing in academic paper compilation and reference management. You have access to read and write files, execute bash commands, and use all available tools. Pay special attention to fixing undefined references and missing figures.",
             cwd=Path.cwd(),
             allowed_tools=["Read", "Write", "Bash", "Edit", "MultiEdit"],
             permission_mode="acceptEdits"
@@ -554,7 +747,7 @@ Please debug and fix all compilation errors automatically."""
                 message_str = str(message)
                 
                 if "ResultMessage(" in message_str:
-                    formatter.print("LaTeX debugging completed", MessageType.SUCCESS)
+                    formatter.print("LaTeX debugging and reference fixing completed", MessageType.SUCCESS)
                 elif "SystemMessage(" in message_str:
                     # Extract meaningful system messages
                     content_found = False
@@ -593,8 +786,22 @@ Please debug and fix all compilation errors automatically."""
                             if text:
                                 formatter.print(text, MessageType.INFO)
 
-            # Test if the LaTeX file compiles now
+            # Test if the LaTeX file compiles now and check references
             success, _ = self.try_compile_latex(latex_path)
+            
+            if success:
+                # Double-check references after fixing
+                final_issues = self.check_reference_issues(latex_path)
+                remaining_issues = []
+                for issue_type, issues in final_issues.items():
+                    if issues:
+                        remaining_issues.extend(issues)
+                
+                if remaining_issues:
+                    formatter.print(f"Warning: Some reference issues may remain: {remaining_issues}", MessageType.WARNING)
+                else:
+                    formatter.print("All reference issues resolved successfully", MessageType.SUCCESS)
+            
             return success
             
         except Exception as e:
@@ -602,7 +809,7 @@ Please debug and fix all compilation errors automatically."""
             return False
 
     def cleanup_latex_file(self, latex_path: Path) -> bool:
-        """Clean up common LaTeX formatting issues."""
+        """Clean up common LaTeX formatting issues and prevent width overflow."""
         try:
             with open(latex_path, 'r', encoding='utf-8') as f:
                 content = f.read()
@@ -619,9 +826,83 @@ Please debug and fix all compilation errors automatically."""
             # Ensure proper line endings
             content = content.replace('\r\n', '\n').replace('\r', '\n')
             
+            # FIX WIDTH OVERFLOW ISSUES:
+            
+            # 1. Fix figures without proper width constraints
+            content = re.sub(
+                r'\\includegraphics\{([^}]+)\}',
+                r'\\includegraphics[width=0.8\\textwidth,keepaspectratio]{\1}',
+                content
+            )
+            # Don't double-apply width settings
+            content = re.sub(
+                r'\\includegraphics\[[^\]]*width[^\]]*\]\[width=0\.8\\textwidth,keepaspectratio\]',
+                lambda m: m.group(0).replace('[width=0.8\\textwidth,keepaspectratio]', ''),
+                content
+            )
+            
+            # 2. Wrap wide tables with resizebox if not already wrapped
+            # Look for tabular environments not inside resizebox
+            def wrap_wide_tables(match):
+                table_content = match.group(0)
+                if 'resizebox' not in table_content and 'footnotesize' not in table_content:
+                    # Add footnotesize to make table smaller
+                    return table_content.replace(
+                        '\\begin{tabular}', 
+                        '\\footnotesize\n\\begin{tabular}'
+                    )
+                return table_content
+            
+            content = re.sub(
+                r'\\begin\{table\}.*?\\end\{table\}',
+                wrap_wide_tables,
+                content,
+                flags=re.DOTALL
+            )
+            
+            # 3. Break long equations that might overflow
+            # This is a simple heuristic - look for very long equation content
+            def fix_long_equations(match):
+                eq_content = match.group(1)
+                # If equation line is very long, suggest breaking it
+                if len(eq_content) > 80 and '\\\\' not in eq_content and 'align' not in eq_content:
+                    # Try to break at + or = signs
+                    if ' + ' in eq_content:
+                        eq_content = eq_content.replace(' + ', ' \\\\\n    &+ ')
+                    elif ' = ' in eq_content and eq_content.count(' = ') == 1:
+                        eq_content = eq_content.replace(' = ', ' &= ')
+                return f'\\begin{{equation}}\n{eq_content}\n\\end{{equation}}'
+            
+            content = re.sub(
+                r'\\begin\{equation\}\s*\n?(.*?)\n?\s*\\end\{equation\}',
+                fix_long_equations,
+                content,
+                flags=re.DOTALL
+            )
+            
+            # 4. Ensure necessary packages are included
+            if '\\usepackage{graphicx}' not in content and '\\includegraphics' in content:
+                content = content.replace(
+                    '\\begin{document}',
+                    '\\usepackage{graphicx}\n\\begin{document}'
+                )
+            
+            if '\\usepackage{amsmath}' not in content and ('\\begin{align}' in content or '\\begin{equation}' in content):
+                content = content.replace(
+                    '\\begin{document}',
+                    '\\usepackage{amsmath}\n\\begin{document}'
+                )
+            
+            if '\\usepackage{tabularx}' not in content and '\\begin{tabularx}' in content:
+                content = content.replace(
+                    '\\begin{document}',
+                    '\\usepackage{tabularx}\n\\begin{document}'
+                )
+            
             with open(latex_path, 'w', encoding='utf-8') as f:
                 f.write(content)
             
+            formatter.print("Applied width overflow prevention fixes", MessageType.INFO)
             return True
         except Exception as e:
             formatter.print(f"Error cleaning LaTeX file: {e}", MessageType.ERROR)
@@ -650,32 +931,39 @@ Please debug and fix all compilation errors automatically."""
         
         # Try initial compilation
         success, error_message = self.try_compile_latex(latex_path)
-        if success:
+        if success and not error_message.startswith("REFERENCE_WARNINGS"):
             formatter.print(f"PDF generated successfully: {latex_path.with_suffix('.pdf')}", MessageType.SUCCESS)
             return latex_path
         else:
-            formatter.print(f"LaTeX compilation failed. Starting agent-based debugging...", MessageType.WARNING)
-            formatter.print(f"Compilation error: {error_message[:500]}...", MessageType.ERROR)
+            if error_message.startswith("REFERENCE_WARNINGS"):
+                formatter.print("PDF generated but reference issues detected. Starting agent-based fixing...", MessageType.WARNING)
+            else:
+                formatter.print(f"LaTeX compilation failed. Starting agent-based debugging...", MessageType.WARNING)
+                
+            formatter.print(f"Issues to fix: {error_message[:500]}...", MessageType.ERROR)
             
             # Use agent to debug and fix
             try:
                 debug_success = asyncio.run(self.debug_latex_with_agent(latex_path, error_message))
                 if debug_success:
                     # Try compilation again after debugging
-                    success, _ = self.try_compile_latex(latex_path)
-                    if success:
+                    success, final_error = self.try_compile_latex(latex_path)
+                    if success and not final_error.startswith("REFERENCE_WARNINGS"):
                         formatter.print(f"PDF generated successfully after debugging: {latex_path.with_suffix('.pdf')}", MessageType.SUCCESS)
                         return latex_path
                     else:
-                        formatter.print("Agent fixed some issues but compilation still failed.", MessageType.WARNING)
+                        if final_error.startswith("REFERENCE_WARNINGS"):
+                            formatter.print("Agent reduced but did not eliminate all reference issues.", MessageType.WARNING)
+                        else:
+                            formatter.print("Agent fixed some issues but compilation still failed.", MessageType.WARNING)
                         # Check if PDF exists anyway (sometimes it's generated despite errors)
                         pdf_path = latex_path.with_suffix('.pdf')
                         if pdf_path.exists():
-                            formatter.print(f"PDF was generated despite errors: {pdf_path}", MessageType.SUCCESS)
+                            formatter.print(f"PDF was generated despite issues: {pdf_path}", MessageType.SUCCESS)
                             return latex_path
                         return None
                 else:
-                    formatter.print("Agent-based debugging could not resolve all compilation errors.", MessageType.ERROR)
+                    formatter.print("Agent-based debugging could not resolve all issues.", MessageType.ERROR)
                     # Check if PDF exists anyway
                     pdf_path = latex_path.with_suffix('.pdf')
                     if pdf_path.exists():
@@ -760,32 +1048,39 @@ Please debug and fix all compilation errors automatically."""
             
             # Try compilation
             success, error_message = self.try_compile_latex(latex_path)
-            if success:
+            if success and not error_message.startswith("REFERENCE_WARNINGS"):
                 formatter.print(f"PDF generated successfully: {latex_path.with_suffix('.pdf')}", MessageType.SUCCESS)
                 return latex_path
             else:
-                formatter.print(f"LaTeX compilation failed. Starting agent-based debugging...", MessageType.WARNING)
-                formatter.print(f"Compilation error: {error_message[:500]}...", MessageType.ERROR)
+                if error_message.startswith("REFERENCE_WARNINGS"):
+                    formatter.print("PDF generated but reference issues detected. Starting agent-based fixing...", MessageType.WARNING)
+                else:
+                    formatter.print(f"LaTeX compilation failed. Starting agent-based debugging...", MessageType.WARNING)
+                    
+                formatter.print(f"Issues to fix: {error_message[:500]}...", MessageType.ERROR)
                 
                 # Use agent to debug and fix
                 try:
                     debug_success = asyncio.run(self.debug_latex_with_agent(latex_path, error_message))
                     if debug_success:
                         # Try compilation again after debugging
-                        success, _ = self.try_compile_latex(latex_path)
-                        if success:
+                        success, final_error = self.try_compile_latex(latex_path)
+                        if success and not final_error.startswith("REFERENCE_WARNINGS"):
                             formatter.print(f"PDF generated successfully after debugging: {latex_path.with_suffix('.pdf')}", MessageType.SUCCESS)
                             return latex_path
                         else:
-                            formatter.print("Agent fixed some issues but compilation still failed.", MessageType.WARNING)
+                            if final_error.startswith("REFERENCE_WARNINGS"):
+                                formatter.print("Agent reduced but did not eliminate all reference issues.", MessageType.WARNING)
+                            else:
+                                formatter.print("Agent fixed some issues but compilation still failed.", MessageType.WARNING)
                             # Check if PDF exists anyway (sometimes it's generated despite errors)
                             pdf_path = latex_path.with_suffix('.pdf')
                             if pdf_path.exists():
-                                formatter.print(f"PDF was generated despite errors: {pdf_path}", MessageType.SUCCESS)
+                                formatter.print(f"PDF was generated despite issues: {pdf_path}", MessageType.SUCCESS)
                                 return latex_path
                             return None
                     else:
-                        formatter.print("Agent-based debugging could not resolve all compilation errors.", MessageType.ERROR)
+                        formatter.print("Agent-based debugging could not resolve all issues.", MessageType.ERROR)
                         # Check if PDF exists anyway
                         pdf_path = latex_path.with_suffix('.pdf')
                         if pdf_path.exists():

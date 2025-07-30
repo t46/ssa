@@ -4,7 +4,7 @@ WVS Wave 7 Social Science Research Automation Pipeline
 
 This script executes the complete research pipeline described in the PRD:
 - Step 3: LLM research idea generation  
-- Step 4: Dynamic analysis code generation and execution
+- Step 4: Analysis code generation and execution
 - Step 5: Academic paper generation in LaTeX format
 
 Prerequisites:
@@ -69,8 +69,8 @@ def step_3_generate_research_ideas() -> bool:
 
 
 def step_4_run_analysis() -> bool:
-    """Execute Step 4: Dynamic analysis code generation and execution."""
-    formatter.print("STEP 4: Running dynamic analysis", MessageType.SECTION)
+    """Execute Step 4: Analysis code generation and execution."""
+    formatter.print("STEP 4: Running analysis", MessageType.SECTION)
     
     try:
         analysis = AgentBasedWVSAnalysis()
@@ -80,7 +80,7 @@ def step_4_run_analysis() -> bool:
         failed_analyses = [r for r in results if 'error' in r]
         
         formatter.print(f"Analysis completed: {len(successful_analyses)} successful, {len(failed_analyses)} failed", MessageType.SUCCESS)
-        formatter.print("Analysis report saved to outputs/dynamic_analysis_report.md", MessageType.SUCCESS)
+        formatter.print("Analysis report saved to outputs/analysis_report.md", MessageType.SUCCESS)
         
         if failed_analyses:
             formatter.print("Failed analyses:", MessageType.WARNING)
@@ -134,7 +134,7 @@ def main():
     # Execute pipeline steps
     steps = [
         ("Step 3: Research Ideas Generation", step_3_generate_research_ideas),
-        ("Step 4: Dynamic Analysis", step_4_run_analysis),
+        ("Step 4: Analysis", step_4_run_analysis),
         ("Step 5: Paper Generation", step_5_generate_paper)
     ]
     
@@ -164,7 +164,7 @@ def main():
         formatter.print("Pipeline completed successfully!", MessageType.SUCCESS)
         formatter.print("\nGenerated outputs:", MessageType.INFO)
         formatter.print("- spec/research.yaml (research proposals)", MessageType.INFO, indent=2)
-        formatter.print("- outputs/dynamic_analysis_report.md (analysis results)", MessageType.INFO, indent=2)
+        formatter.print("- outputs/analysis_report.md (analysis results)", MessageType.INFO, indent=2)
         formatter.print("- outputs/paper.tex (academic paper)", MessageType.INFO, indent=2)
         if Path("outputs/paper.pdf").exists():
             formatter.print("- outputs/paper.pdf (compiled paper)", MessageType.INFO, indent=2)
