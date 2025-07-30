@@ -1,4 +1,4 @@
-"""Generate LaTeX paper from analysis results - Dynamic version."""
+"""Generate LaTeX paper from analysis results."""
 import yaml
 import json
 from pathlib import Path
@@ -13,13 +13,13 @@ from src.terminal_formatter import formatter, MessageType
 import re
 
 
-class DynamicPaperGenerator:
-    """Generate academic paper in LaTeX format dynamically based on analysis results."""
+class PaperGenerator:
+    """Generate academic paper in LaTeX format based on analysis results."""
     
     def __init__(self):
         """Initialize paper generator with paths and data."""
         self.research_path = Path("spec/research.yaml")
-        self.report_path = Path("outputs/dynamic_analysis_report.md")
+        self.report_path = Path("outputs/analysis_report.md")
         self.output_path = Path("outputs")
         
         # Load configurations
@@ -39,7 +39,7 @@ class DynamicPaperGenerator:
             with open(self.report_path, 'r') as f:
                 return f.read()
         else:
-            # Fallback to original report if dynamic one doesn't exist
+            # Fallback to original report if main one doesn't exist
             fallback_path = self.output_path / 'analysis_report.md'
             if fallback_path.exists():
                 with open(fallback_path, 'r') as f:
@@ -74,7 +74,7 @@ class DynamicPaperGenerator:
         return figure_descriptions
     
     def generate_paper_content(self, compile_error_feedback: Optional[str] = None) -> str:
-        """Generate paper content dynamically using LLM, with optional compile error feedback."""
+        """Generate paper content using LLM, with optional compile error feedback."""
         # Load analysis results
         analysis_results = self.load_analysis_results()
         
@@ -144,9 +144,11 @@ IMPORTANT FIGURE INSERTION REQUIREMENTS:
 Generate complete LaTeX code that compiles without errors.
 """
         
-        response = self.client.messages.create(
-            model="claude-3-5-sonnet-20241022",
-            max_tokens=8000,
+        # Use streaming for long requests
+        response_text = ""
+        stream = self.client.messages.stream(
+            model="claude-3-7-sonnet-20250219",
+            max_tokens=24000,
             temperature=0.5,
             messages=[{
                 "role": "user",
@@ -154,18 +156,249 @@ Generate complete LaTeX code that compiles without errors.
             }]
         )
         
-        # Extract LaTeX content
-        # Anthropic APIのレスポンスからLaTeXテキストを抽出
-        if isinstance(response.content[0], dict) and 'text' in response.content[0]:
-            latex_content = response.content[0]['text']
-        else:
-            latex_content = str(response.content[0])
+        # Collect streamed response
+        with stream as stream:
+            for text in stream.text_stream:
+                response_text += text
+        
+        latex_content = response_text
         # Clean up the content if needed
         if "```latex" in latex_content:
             latex_content = latex_content.split("```latex")[1].split("```", 1)[0]
         elif "```" in latex_content:
             latex_content = latex_content.split("```", 1)[1].split("```", 1)[0]
         return latex_content
+    
+    def generate_paper_outline(self) -> Dict[str, Any]:
+        """Generate the overall structure and outline of the paper."""
+        # Load analysis results
+        analysis_results = self.load_analysis_results()
+        
+        # Get list of actual figure files
+        figure_files = sorted(self.output_path.glob("*.png"))
+        figure_names = [f.name for f in figure_files]
+        
+        # Create a mapping of figure descriptions from the analysis results
+        figure_mapping = self._extract_figure_descriptions(analysis_results)
+        
+        prompt = f"""Based on the research configuration and analysis results, generate a detailed outline for an academic paper.
+
+Research Configuration:
+{json.dumps(self.research_config, indent=2)}
+
+Analysis Results:
+{analysis_results}
+
+Available Figures:
+{json.dumps(figure_names, indent=2)}
+
+Figure Descriptions:
+{json.dumps(figure_mapping, indent=2)}
+
+Please generate a comprehensive outline that includes:
+
+1. **Title**: A compelling title that reflects all research topics
+2. **Abstract Structure**: Key points to cover (150-200 words)
+3. **Section Outlines**: For each section, provide:
+   - Main objectives
+   - Key points to cover
+   - Figures/tables to include
+   - Approximate word count
+
+Sections to outline:
+- Introduction
+- Literature Review
+- Methods
+- Results (with subsections for each hypothesis)
+- Discussion
+- Limitations
+- Conclusion
+
+Return the outline as a structured JSON format with clear section breakdowns, key arguments, and figure placements.
+"""
+
+        # Use streaming for long requests
+        response_text = ""
+        stream = self.client.messages.stream(
+            model="claude-3-7-sonnet-20250219",
+            max_tokens=16000,
+            temperature=0.3,
+            messages=[{
+                "role": "user",
+                "content": prompt
+            }]
+        )
+        
+        # Collect streamed response
+        with stream as stream:
+            for text in stream.text_stream:
+                response_text += text
+        
+        outline_text = response_text
+        
+        # Try to parse as JSON, fallback to text structure
+        try:
+            # Look for JSON in the response
+            import re
+            json_match = re.search(r'\{.*\}', outline_text, re.DOTALL)
+            if json_match:
+                outline = json.loads(json_match.group())
+            else:
+                # Create a structured outline from text
+                outline = {
+                    "title": "Multi-faceted Analysis of Digital Engagement and Social Trust",
+                    "outline_text": outline_text
+                }
+        except:
+            outline = {
+                "title": "Multi-faceted Analysis of Digital Engagement and Social Trust", 
+                "outline_text": outline_text
+            }
+        
+        return outline
+    
+    def generate_section_content(self, section_name: str, outline: Dict[str, Any]) -> str:
+        """Generate detailed content for a specific section based on the outline."""
+        # Load analysis results
+        analysis_results = self.load_analysis_results()
+        
+        # Get list of actual figure files
+        figure_files = sorted(self.output_path.glob("*.png"))
+        figure_names = [f.name for f in figure_files]
+        
+        # Create a mapping of figure descriptions from the analysis results
+        figure_mapping = self._extract_figure_descriptions(analysis_results)
+        
+        prompt = f"""Generate detailed LaTeX content for the {section_name} section of an academic paper.
+
+Paper Outline:
+{json.dumps(outline, indent=2)}
+
+Research Configuration:
+{json.dumps(self.research_config, indent=2)}
+
+Analysis Results:
+{analysis_results}
+
+Available Figures:
+{json.dumps(figure_names, indent=2)}
+
+Figure Descriptions:
+{json.dumps(figure_mapping, indent=2)}
+
+Requirements for {section_name} section:
+1. Write in professional academic style
+2. Include proper citations (Author, Year format)
+3. Reference figures and tables appropriately
+4. Use LaTeX formatting (subsections, equations, etc.)
+5. Ensure content flows logically from the outline
+6. Be comprehensive and detailed (aim for substantial content)
+
+For Results section: Include statistical notation, p-values, coefficients, R-squared values
+For Methods section: Describe data collection, variables, analytical approach
+For Discussion section: Interpret findings, compare with literature, discuss implications
+
+Generate ONLY the LaTeX content for this section (no \\documentclass, \\begin{{document}}, etc.).
+Include appropriate LaTeX section commands (\\section{{}}, \\subsection{{}}).
+"""
+
+        # Use streaming for long requests
+        response_text = ""
+        stream = self.client.messages.stream(
+            model="claude-3-7-sonnet-20250219",
+            max_tokens=20000,
+            temperature=0.4,
+            messages=[{
+                "role": "user", 
+                "content": prompt
+            }]
+        )
+        
+        # Collect streamed response
+        with stream as stream:
+            for text in stream.text_stream:
+                response_text += text
+        
+        section_content = response_text
+            
+        # Clean up content if needed
+        if "```latex" in section_content:
+            section_content = section_content.split("```latex")[1].split("```", 1)[0]
+        elif "```" in section_content:
+            section_content = section_content.split("```", 1)[1].split("```", 1)[0]
+            
+        return section_content.strip()
+    
+    def refine_complete_paper(self, sections: Dict[str, str], outline: Dict[str, Any]) -> str:
+        """Refine and integrate all sections into a complete, coherent paper."""
+        # Load analysis results for context
+        analysis_results = self.load_analysis_results()
+        
+        # Get list of actual figure files
+        figure_files = sorted(self.output_path.glob("*.png"))
+        figure_names = [f.name for f in figure_files]
+        
+        prompt = f"""Refine and integrate the following sections into a complete, coherent academic paper in LaTeX format.
+
+Original Outline:
+{json.dumps(outline, indent=2)}
+
+Generated Sections:
+{json.dumps(sections, indent=2)}
+
+Research Configuration:
+{json.dumps(self.research_config, indent=2)}
+
+Available Figures:
+{json.dumps(figure_names, indent=2)}
+
+Your task:
+1. Create a complete LaTeX document with proper preamble and document structure
+2. Integrate all sections smoothly with proper transitions
+3. Ensure consistent terminology and citation style throughout
+4. Check that all figures are properly referenced and placed
+5. Add any missing elements (abstract, references, etc.)
+6. Ensure proper LaTeX formatting and compilation compatibility
+7. Maintain academic writing standards and logical flow
+
+The final paper should include:
+- Complete LaTeX document structure (\\documentclass to \\end{{document}})
+- Title page with appropriate title from outline
+- Abstract (150-200 words)
+- All sections integrated coherently  
+- Proper figure placements with captions and labels
+- Consistent academic style
+- Bibliography section
+
+Generate the complete, publication-ready LaTeX document.
+"""
+
+        # Use streaming for long requests
+        response_text = ""
+        stream = self.client.messages.stream(
+            model="claude-3-7-sonnet-20250219",
+            max_tokens=32000,
+            temperature=0.3,
+            messages=[{
+                "role": "user",
+                "content": prompt
+            }]
+        )
+        
+        # Collect streamed response
+        with stream as stream:
+            for text in stream.text_stream:
+                response_text += text
+        
+        refined_content = response_text
+            
+        # Clean up content if needed
+        if "```latex" in refined_content:
+            refined_content = refined_content.split("```latex")[1].split("```", 1)[0]
+        elif "```" in refined_content:
+            refined_content = refined_content.split("```", 1)[1].split("```", 1)[0]
+            
+        return refined_content.strip()
     
     def extract_bibliography(self, latex_content: str) -> str:
         """Extract bibliography entries from LaTeX content."""
@@ -289,7 +522,7 @@ Generate complete LaTeX code that compiles without errors.
         prompt = f"""You are tasked with debugging and fixing LaTeX compilation errors for an academic paper.
 
 The LaTeX file is located at: {latex_path}
-The bibliography file is at: {self.output_path / "dynamic_references.bib"}
+The bibliography file is at: {self.output_path / "references.bib"}
 
 Compilation error:
 {error_message}
@@ -400,7 +633,7 @@ Please debug and fix all compilation errors automatically."""
         
         # Generate initial draft
         latex_content = self.generate_paper_content()
-        latex_path = self.output_path / "dynamic_paper.tex"
+        latex_path = self.output_path / "paper.tex"
         with open(latex_path, 'w', encoding='utf-8') as f:
             f.write(latex_content)
         
@@ -408,7 +641,7 @@ Please debug and fix all compilation errors automatically."""
         self.cleanup_latex_file(latex_path)
             
         bib_content = self.extract_bibliography(latex_content)
-        bib_path = self.output_path / "dynamic_references.bib"
+        bib_path = self.output_path / "references.bib"
         with open(bib_path, 'w', encoding='utf-8') as f:
             f.write(bib_content)
             
@@ -459,7 +692,121 @@ Please debug and fix all compilation errors automatically."""
                     return latex_path
                 return None
 
+    def save_paper_with_multi_step_generation(self):
+        """Generate paper using 3-step process: outline → sections → refinement."""
+        formatter.print("Starting 3-step paper generation process...", MessageType.PROGRESS)
+        
+        # Step 1: Generate outline
+        formatter.print("Step 1: Generating paper outline...", MessageType.PROGRESS)
+        outline = self.generate_paper_outline()
+        
+        # Save outline for debugging
+        outline_path = self.output_path / "paper_outline.json"
+        with open(outline_path, 'w', encoding='utf-8') as f:
+            json.dump(outline, f, indent=2, ensure_ascii=False)
+        formatter.print(f"Outline saved: {outline_path}", MessageType.SUCCESS)
+        
+        # Step 2: Generate individual sections
+        formatter.print("Step 2: Generating detailed sections...", MessageType.PROGRESS)
+        sections = {}
+        section_names = [
+            "Introduction",
+            "Literature Review", 
+            "Methods",
+            "Results",
+            "Discussion",
+            "Limitations",
+            "Conclusion"
+        ]
+        
+        for section_name in section_names:
+            formatter.print(f"  Generating {section_name}...", MessageType.INFO)
+            try:
+                section_content = self.generate_section_content(section_name, outline)
+                sections[section_name] = section_content
+                
+                # Save individual section for debugging
+                section_file = self.output_path / f"section_{section_name.lower().replace(' ', '_')}.tex"
+                with open(section_file, 'w', encoding='utf-8') as f:
+                    f.write(section_content)
+                    
+            except Exception as e:
+                formatter.print(f"Error generating {section_name}: {e}", MessageType.ERROR)
+                sections[section_name] = f"% Error generating {section_name}: {e}"
+        
+        formatter.print(f"Generated {len(sections)} sections", MessageType.SUCCESS)
+        
+        # Step 3: Refine and integrate complete paper
+        formatter.print("Step 3: Refining and integrating complete paper...", MessageType.PROGRESS)
+        try:
+            refined_latex = self.refine_complete_paper(sections, outline)
+            
+            # Save refined paper
+            latex_path = self.output_path / "paper.tex"
+            with open(latex_path, 'w', encoding='utf-8') as f:
+                f.write(refined_latex)
+            
+            # Clean up the LaTeX file
+            self.cleanup_latex_file(latex_path)
+            
+            # Generate bibliography
+            bib_content = self.extract_bibliography(refined_latex)
+            bib_path = self.output_path / "references.bib"
+            with open(bib_path, 'w', encoding='utf-8') as f:
+                f.write(bib_content)
+                
+            formatter.print(f"Multi-step LaTeX paper generated: {latex_path}", MessageType.SUCCESS)
+            formatter.print(f"Bibliography file created: {bib_path}", MessageType.SUCCESS)
+            
+            # Try compilation
+            success, error_message = self.try_compile_latex(latex_path)
+            if success:
+                formatter.print(f"PDF generated successfully: {latex_path.with_suffix('.pdf')}", MessageType.SUCCESS)
+                return latex_path
+            else:
+                formatter.print(f"LaTeX compilation failed. Starting agent-based debugging...", MessageType.WARNING)
+                formatter.print(f"Compilation error: {error_message[:500]}...", MessageType.ERROR)
+                
+                # Use agent to debug and fix
+                try:
+                    debug_success = asyncio.run(self.debug_latex_with_agent(latex_path, error_message))
+                    if debug_success:
+                        # Try compilation again after debugging
+                        success, _ = self.try_compile_latex(latex_path)
+                        if success:
+                            formatter.print(f"PDF generated successfully after debugging: {latex_path.with_suffix('.pdf')}", MessageType.SUCCESS)
+                            return latex_path
+                        else:
+                            formatter.print("Agent fixed some issues but compilation still failed.", MessageType.WARNING)
+                            # Check if PDF exists anyway (sometimes it's generated despite errors)
+                            pdf_path = latex_path.with_suffix('.pdf')
+                            if pdf_path.exists():
+                                formatter.print(f"PDF was generated despite errors: {pdf_path}", MessageType.SUCCESS)
+                                return latex_path
+                            return None
+                    else:
+                        formatter.print("Agent-based debugging could not resolve all compilation errors.", MessageType.ERROR)
+                        # Check if PDF exists anyway
+                        pdf_path = latex_path.with_suffix('.pdf')
+                        if pdf_path.exists():
+                            formatter.print(f"PDF was generated despite debugging failure: {pdf_path}", MessageType.SUCCESS)
+                            return latex_path
+                        return None
+                        
+                except Exception as e:
+                    formatter.print(f"Error during agent-based debugging: {e}", MessageType.ERROR)
+                    # Check if PDF exists anyway
+                    pdf_path = latex_path.with_suffix('.pdf')
+                    if pdf_path.exists():
+                        formatter.print(f"PDF was generated despite error: {pdf_path}", MessageType.SUCCESS)
+                        return latex_path
+                    return None
+                    
+        except Exception as e:
+            formatter.print(f"Error in Step 3 (refinement): {e}", MessageType.ERROR)
+            return None
+
 
 if __name__ == "__main__":
-    generator = DynamicPaperGenerator()
-    generator.save_paper_with_agent_debugging()
+    generator = PaperGenerator()
+    generator.save_paper_with_multi_step_generation()
