@@ -99,7 +99,7 @@ def step_5_generate_paper() -> bool:
     
     try:
         generator = PaperGenerator()
-        latex_path = generator.save_paper_with_agent_debugging()
+        latex_path = generator.save_paper_with_multi_step_generation()
         
         if latex_path:
             formatter.print("LaTeX paper generated successfully", MessageType.SUCCESS)
@@ -165,9 +165,9 @@ def main():
         formatter.print("\nGenerated outputs:", MessageType.INFO)
         formatter.print("- spec/research.yaml (research proposals)", MessageType.INFO, indent=2)
         formatter.print("- outputs/dynamic_analysis_report.md (analysis results)", MessageType.INFO, indent=2)
-        formatter.print("- outputs/dynamic_paper.tex (academic paper)", MessageType.INFO, indent=2)
-        if Path("outputs/dynamic_paper.pdf").exists():
-            formatter.print("- outputs/dynamic_paper.pdf (compiled paper)", MessageType.INFO, indent=2)
+        formatter.print("- outputs/paper.tex (academic paper)", MessageType.INFO, indent=2)
+        if Path("outputs/paper.pdf").exists():
+            formatter.print("- outputs/paper.pdf (compiled paper)", MessageType.INFO, indent=2)
     else:
         formatter.print(f"Pipeline completed with {total_steps - successful_steps} errors", MessageType.WARNING)
         formatter.print("Please check the error messages above for details", MessageType.WARNING)
