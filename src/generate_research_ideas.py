@@ -296,8 +296,8 @@ For the proposal, provide:
    - Mediators (if applicable)
 6. Analytical approach
 
-Questionnaire excerpt:
-{pdf_content[:5000]}
+Full questionnaire content:
+{pdf_content}
 
 Format the output as a JSON array with the structure shown in the example.
 
@@ -386,7 +386,10 @@ Example structure:
 
 
 def save_research_proposals():
-    """Generate and save research proposals to YAML file."""
+    """Generate and save research proposals to YAML file. 
+    
+    Note: This function always generates fresh proposals and overwrites any existing research.yaml file.
+    """
     try:
         proposals = generate_research_proposals()
         
@@ -402,6 +405,7 @@ def save_research_proposals():
             }
         }
         
+        # Always create fresh research proposals (overwrite existing file)
         output_path = Path("spec/research.yaml")
         output_path.parent.mkdir(parents=True, exist_ok=True)
         with open(output_path, "w", encoding="utf-8") as f:

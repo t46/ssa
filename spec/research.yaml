@@ -1,104 +1,100 @@
 research_proposals:
 - id: 1
-  title: 'Digital Technology and Social Trust: Examining the Mediating Role of Social
-    Media Use in Americans'' Institutional Confidence'
-  objective: To investigate how digital technology adoption and social media use patterns
-    influence Americans' trust in major institutions, with particular attention to
-    generational differences and digital capability levels
-  theoretical_background: The study integrates social capital theory (Putnam), media
-    system dependency theory, and digital capability framework (Khin & Ho, 2018).
-    Recent literature suggests digital technologies have transformed social interactions
-    and institutional relationships, particularly during crisis events like COVID-19
-    (Ting et al., 2020). The research considers how digital literacy and technological
-    capability moderate trust formation, moving beyond simple usage metrics to examine
-    qualitative aspects of digital engagement.
+  title: 'The Role of Social Trust and Political Engagement in Shaping Democratic
+    Values Among Americans: A Multi-Level Analysis'
+  objective: To examine how social trust and political engagement interact to influence
+    support for democratic values and institutions in the United States, while accounting
+    for regional variations and causal mechanisms
+  theoretical_background: This study integrates social capital theory (Putnam), political
+    socialization theory, and recent work on mindfulness and psychological well-being
+    (Brown & Ryan, 2003) to understand democratic value formation. The theoretical
+    framework considers how conscious attention to civic life and deliberate political
+    practice (drawing on Ericsson et al., 1993) may strengthen democratic orientations
+    through enhanced social trust and engagement.
   hypotheses:
-  - 'H1: Higher levels of passive social media consumption will be negatively associated
-    with institutional trust, while active engagement will show positive associations'
-  - 'H2: Digital capability will moderate the relationship between social media use
-    and institutional trust, with higher capability users showing more resilience
-    to misinformation'
-  - 'H3: The negative effects of social media exposure on institutional trust will
-    be stronger for users with lower digital literacy scores'
-  - 'H4: Generational differences in digital nativeness will moderate the relationship
-    between digital technology use and institutional trust'
+  - 'H1: Higher levels of social trust will be positively associated with stronger
+    support for democratic values, with the effect being stronger in regions with
+    higher civic participation rates'
+  - 'H2: The relationship between social trust and democratic support will be sequentially
+    mediated by political interest and civic participation'
+  - 'H3: The positive effect of social trust on democratic support will be moderated
+    by both the frequency and quality of political engagement'
+  - 'H4: Individual-level effects of social trust on democratic support will vary
+    by regional-level institutional trust'
   variables:
     dependent:
-    - Q82_CIS
-    - Q60
-    - Q60
+    - v2x_delibdem
+    - Q250
+    - Q250
+    - v2psbars
     independent:
-    - Q44
-    - Y003
-    - Q207
-    - Q154
-    - hdi
+    - Q60
+    - btipolpart
+    - Q252
+    - Q78
+    - GPS_V9
     controls:
-    - medageun
-    - Q275A
+    - Q262
+    - Q260
+    - A_STUDY
     - Q288R
+    - Q279
+    - Q94R
     - Q98R
     - N_REGION_WVS
-    - Q201
-    - v2pehealth
+    - v2mebias
     mediators:
-    - Q45
-    - Q292E
-    - E1_LITERACY
-    - Q207
-  analytical_approach: Multi-level structural equation modeling (SEM) with latent
-    variables, incorporating interaction effects for moderation analysis. Longitudinal
-    component to track trust changes over time. Platform-specific subgroup analyses
-    to account for different social media environments.
+    - Q199
+    - Q216
+    - Q199
+  analytical_approach: Multi-level structural equation modeling (ML-SEM) with propensity
+    score matching to address selection bias (Rosenbaum & Rubin, 1983). Bootstrap
+    mediation analysis for testing sequential mediation effects. Regional clustering
+    will be addressed through hierarchical linear modeling.
   literature_gaps:
-  - Limited research on how digital capability levels moderate social media effects
-    on trust
-  - Lack of studies examining platform-specific trust dynamics
-  - Need for more nuanced understanding of active versus passive social media engagement
-    effects
-  - Gap in understanding how crisis events (like COVID-19) interact with digital technology
-    use to shape institutional trust
-  - Limited longitudinal research on trust resilience in digital contexts
+  - Limited research on the quality versus quantity of political engagement
+  - Lack of multi-level analysis incorporating regional variations in institutional
+    trust
+  - Need for causal pathway analysis in democratic value formation
+  - Insufficient attention to the role of mindful civic attention in democratic engagement
+  - Limited integration of psychological well-being frameworks in political socialization
+    research
   referenced_papers:
-  - title: 'Digital Entrepreneurship: Toward a Digital Technology Perspective of Entrepreneurship'
+  - title: Density-functional thermochemistry. III. The role of exact exchange
     authors:
-    - Satish Nambisan
-    year: 2016
-    doi: https://doi.org/10.1111/etap.12254
-    citations: 2044
-  - title: 'Understanding the role of digital technologies in education: A review'
+    - Axel D. Becke
+    year: 1993
+    doi: https://doi.org/10.1063/1.464913
+    citations: 97728
+  - title: The central role of the propensity score in observational studies for causal
+      effects
     authors:
-    - Abid Haleem
-    - Mohd Javaid
-    - Mohammad Asim Qadri
-    year: 2022
-    doi: https://doi.org/10.1016/j.susoc.2022.05.004
-    citations: 1672
-  - title: Digital technology and COVID-19
+    - Paul R. Rosenbaum
+    - Donald B. Rubin
+    year: 1983
+    doi: https://doi.org/10.1093/biomet/70.1.41
+    citations: 27938
+  - title: Role of Insulin Resistance in Human Disease
     authors:
-    - Daniel Shu Wei Ting
-    - Lawrence Carin
-    - Victor J. Dzau
-    year: 2020
-    doi: https://doi.org/10.1038/s41591-020-0824-5
-    citations: 1389
-  - title: Digital technologies in the public-health response to COVID-19
+    - Gerald M. Reaven
+    year: 1988
+    doi: https://doi.org/10.2337/diab.37.12.1595
+    citations: 12230
+  - title: Calcium's Role in Mechanotransduction during Muscle Development
     authors:
-    - Jobie Budd
-    - Benjamin S. Miller
-    - Erin Manning
-    year: 2020
-    doi: https://doi.org/10.1038/s41591-020-1011-4
-    citations: 1093
-  - title: The impact of digital technology and Industry 4.0 on the ripple effect
-      and supply chain risk analytics
+    - Tatiana Benavides Damm
+    - Marcel Egli
+    year: 2014
+    doi: https://doi.org/10.1159/000356667
+    citations: 14474
+  - title: 'The benefits of being present: Mindfulness and its role in psychological
+      well-being.'
     authors:
-    - Dmitry Ivanov
-    - Alexandre Dolgui
-    - Boris Sokolov
-    year: 2018
-    doi: https://doi.org/10.1080/00207543.2018.1488086
-    citations: 1524
+    - Kirk Warren Brown
+    - Richard M. Ryan
+    year: 2003
+    doi: https://doi.org/10.1037/0022-3514.84.4.822
+    citations: 12108
 metadata:
   dataset: WVS Wave 7 (2017-2022)
   country: United States (B_COUNTRY = 840)
