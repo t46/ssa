@@ -14,6 +14,7 @@ Prerequisites:
 
 import sys
 import os
+import shutil
 from pathlib import Path
 from typing import List, Dict, Any
 
@@ -24,6 +25,22 @@ from generate_research_ideas import save_research_proposals
 from generate_and_execute_analysis import AgentBasedWVSAnalysis
 from generate_paper import PaperGenerator
 from terminal_formatter import formatter, MessageType
+
+
+def cleanup_directories() -> None:
+    """Clean up outputs and spec directories before execution."""
+    directories_to_clean = ["outputs", "spec"]
+    
+    for dir_name in directories_to_clean:
+        dir_path = Path(dir_name)
+        if dir_path.exists():
+            try:
+                shutil.rmtree(dir_path)
+                formatter.print(f"Cleaned up {dir_name} directory", MessageType.INFO)
+            except Exception as e:
+                formatter.print(f"Warning: Could not clean up {dir_name} directory: {e}", MessageType.WARNING)
+        else:
+            formatter.print(f"{dir_name} directory does not exist, skipping cleanup", MessageType.INFO)
 
 
 def check_prerequisites() -> bool:
@@ -124,6 +141,10 @@ def step_5_generate_paper() -> bool:
 def main():
     """Execute the complete research pipeline."""
     formatter.print("WVS Wave 7 Social Science Research Automation Pipeline", MessageType.SECTION)
+    
+    # Clean up directories before execution
+    formatter.print("Cleaning up previous outputs...", MessageType.INFO)
+    cleanup_directories()
     
     # Check prerequisites
     if not check_prerequisites():
