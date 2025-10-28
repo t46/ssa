@@ -19,7 +19,7 @@ from claude_code_sdk import query, ClaudeCodeOptions
 import asyncio
 from terminal_formatter import formatter, MessageType
 
-# Set ANTHROPIC_API_KEY from ANTHROPIC_API_KEY_SSA for claude_code_sdk
+# Set ANTHROPIC_API_KEY for claude_code_sdk if using Anthropic
 if os.getenv("ANTHROPIC_API_KEY_SSA"):
     os.environ["ANTHROPIC_API_KEY"] = os.getenv("ANTHROPIC_API_KEY_SSA")
 
@@ -238,18 +238,19 @@ The preprocessed data is available at: {data_file}
 Your task is to:
 1. Load and examine the data
 2. Create appropriate indices/scales from the variables
-3. Implement the specified analytical approach
-4. Test each hypothesis with appropriate statistical methods
-5. Generate meaningful visualizations and save them to the outputs/ directory
-6. Create a Python script that generates results as a dictionary with keys: 'statistics', 'visualizations', 'findings'
-7. Handle any errors or issues that arise during analysis
-8. Save all results and visualizations to the outputs/ directory
-9. For each visualization, include descriptive filenames that indicate their content:
+3. Calculate and save descriptive statistics for all variables (mean, std, min, max, etc.)
+4. Implement the specified analytical approach
+5. Test each hypothesis with appropriate statistical methods
+6. Generate meaningful visualizations and save them to the outputs/ directory
+7. Create a Python script that generates results as a dictionary with keys: 'statistics', 'visualizations', 'findings'
+8. Handle any errors or issues that arise during analysis
+9. Save all results and visualizations to the outputs/ directory
+10. For each visualization, include descriptive filenames that indicate their content:
    - correlation_matrix.png for correlation heatmaps
    - descriptive_distributions.png for variable distributions
    - hypothesis_X_analysis.png for hypothesis-specific results
    - ALL visualizations MUST be saved as PNG files (.png extension)
-10. In your results dictionary, include a 'figure_descriptions' key that maps figure filenames to their descriptions
+11. In your results dictionary, include a 'figure_descriptions' key that maps figure filenames to their descriptions
 
 Use weighted statistics where appropriate (using the 'weight' column).
 The data includes all specified variables plus a 'weight' column for population weighting.
@@ -487,6 +488,39 @@ IMPORTANT: When creating visualizations:
                     f.write("\n")
 
         formatter.print(f"Report generated: {report_path}", MessageType.SUCCESS)
+
+    def run_single_analysis(self, proposal_id: int):
+        """Run analysis for a single research proposal.
+        
+        Args:
+            proposal_id: Index of the research proposal (0-based)
+            
+        Returns:
+            Dict with analysis results or error information
+        """
+        research = self.research_config["research_proposals"][proposal_id]
+        formatter.print(f"Research {proposal_id + 1}: {research['title']}", MessageType.SUBSECTION)
+        
+        try:
+            result = self.execute_agent_analysis(proposal_id)
+            formatter.print(f"Completed Research {proposal_id + 1}", MessageType.SUCCESS)
+            
+            # Generate report for this single analysis
+            self.generate_report([result])
+            
+            return result
+        except Exception as e:
+            formatter.print(f"Error in Research {proposal_id + 1}: {e}", MessageType.ERROR)
+            error_result = {
+                "research_id": proposal_id + 1, 
+                "title": research["title"], 
+                "error": str(e)
+            }
+            
+            # Generate report even on error
+            self.generate_report([error_result])
+            
+            return error_result
 
     def run_all_analyses(self):
         """Run all research analyses using agent-based approach."""

@@ -4,11 +4,12 @@ import yaml
 from pathlib import Path
 from typing import List, Dict, Any
 import PyPDF2
-import anthropic
 import os
 import re
+import random
 from tools.semantic_search import SemanticSearcher
 from tools.search_papers import search_papers, Paper
+from llm_client import LLMClientFactory
 
 
 def load_questionnaire_map() -> Dict[str, Any]:
@@ -25,16 +26,68 @@ def load_codebook_map() -> Dict[str, Any]:
         return json.load(f)
 
 
-def extract_pdf_content(pdf_path: Path, max_pages: int = 30) -> str:
-    """Extract text content from PDF file."""
+def extract_pdf_content(pdf_path: Path, max_pages: int = 30, fallback_to_sampling: bool = True) -> str:
+    """Extract text content from PDF file.
+    
+    Strategy: First attempt to extract all pages. If that fails (timeout, memory error, etc.),
+    fall back to random sampling of pages.
+    
+    Args:
+        pdf_path: Path to PDF file
+        max_pages: Maximum number of pages to extract when using fallback sampling
+        fallback_to_sampling: If True, fall back to random sampling on error
+    
+    Returns:
+        Extracted text content
+    """
     with open(pdf_path, 'rb') as file:
         pdf_reader = PyPDF2.PdfReader(file)
-        text = ""
-        num_pages = min(len(pdf_reader.pages), max_pages)
-        for page_num in range(num_pages):
-            page = pdf_reader.pages[page_num]
-            text += page.extract_text() + "\n"
-    return text
+        total_pages = len(pdf_reader.pages)
+        
+        # First, try to extract all pages
+        try:
+            print(f"Attempting to extract all {total_pages} pages from PDF")
+            text = ""
+            for page_num in range(total_pages):
+                page = pdf_reader.pages[page_num]
+                text += f"\n--- Page {page_num + 1} ---\n"
+                text += page.extract_text() + "\n"
+            
+            print(f"Successfully extracted all {total_pages} pages")
+            return text
+            
+        except Exception as e:
+            # If extraction fails and fallback is enabled, try random sampling
+            if fallback_to_sampling:
+                print(f"Warning: Failed to extract all pages ({type(e).__name__}: {e})")
+                print(f"Falling back to random sampling of {max_pages} pages")
+                
+                try:
+                    # Randomly sample pages
+                    page_indices = sorted(random.sample(range(total_pages), min(max_pages, total_pages)))
+                    
+                    # Show page numbers (1-indexed for user readability)
+                    sampled_page_nums = [p + 1 for p in page_indices]
+                    if len(sampled_page_nums) > 10:
+                        print(f"Sampled pages: {sampled_page_nums[:5]} ... {sampled_page_nums[-5:]}")
+                    else:
+                        print(f"Sampled pages: {sampled_page_nums}")
+                    
+                    text = ""
+                    for page_num in page_indices:
+                        page = pdf_reader.pages[page_num]
+                        text += f"\n--- Page {page_num + 1} ---\n"
+                        text += page.extract_text() + "\n"
+                    
+                    print(f"Successfully extracted {len(page_indices)} sampled pages")
+                    return text
+                    
+                except Exception as sampling_error:
+                    print(f"Error: Random sampling also failed: {sampling_error}")
+                    raise
+            else:
+                # Re-raise the original error if fallback is disabled
+                raise
 
 
 def generate_search_queries(proposal: Dict[str, Any]) -> List[str]:
@@ -219,23 +272,13 @@ Please provide the refined proposal in the same JSON format, with improved:
 
 Return only the JSON object without additional text."""
     
-    # Get refinement from LLM
-    client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY_SSA"))
-    
+    # Get refinement from LLM using factory
     try:
-        response = client.messages.create(
-            model="claude-sonnet-4-20250514",
-            max_tokens=3000,
-            temperature=0.3,
-            messages=[{
-                "role": "user",
-                "content": prompt
-            }]
-        )
+        factory = LLMClientFactory()
+        client = factory.create_client()
         
-        response_text = getattr(response, "content", None)
-        if isinstance(response_text, list) and hasattr(response_text[0], "text"):
-            response_text = response_text[0].text
+        messages = [{"role": "user", "content": prompt}]
+        response_text = client.generate_response(messages)
         
         # Extract JSON from response
         json_match = re.search(r'\{[\s\S]*\}', response_text)
@@ -272,8 +315,19 @@ def map_variables_to_questions(proposals: List[Dict[str, Any]], searcher: Semant
     return proposals
 
 
+def load_config() -> Dict[str, Any]:
+    """Load configuration from YAML file."""
+    config_path = Path("config/llm_config.yaml")
+    with open(config_path, "r", encoding="utf-8") as f:
+        return yaml.safe_load(f)
+
+
 def generate_research_proposals() -> List[Dict[str, Any]]:
     """Generate research proposals based on WVS data using LLM."""
+    # Load configuration
+    config = load_config()
+    num_ideas = config.get('research', {}).get('num_ideas', 1)
+    
     # Load questionnaire PDF content
     pdf_path = Path("data/raw/F00010738-WVS-7_Master_Questionnaire_2017-2020_English.pdf")
     pdf_content = extract_pdf_content(pdf_path)
@@ -282,9 +336,26 @@ def generate_research_proposals() -> List[Dict[str, Any]]:
     codebook = load_codebook_map()
     
     # Create prompt for LLM
-    prompt = f"""Based on the World Values Survey Wave 7 questionnaire content below, generate 1 innovative research proposal for analyzing American values and attitudes.
+    diversity_instruction = ""
+    if num_ideas > 1:
+        diversity_instruction = f"""
+IMPORTANT: Generate {num_ideas} DISTINCT and DIVERSE research proposals covering DIFFERENT topics and research areas. 
+Each proposal should explore a UNIQUE aspect of American values and attitudes. 
+Avoid generating similar proposals - ensure variety in:
+- Research topics (e.g., political attitudes, social trust, family values, religious beliefs, economic attitudes, environmental concerns, etc.)
+- Theoretical frameworks (different theories for each proposal)
+- Methodological approaches
+- Variables of interest
 
-For the proposal, provide:
+"""
+    
+    prompt = f"""Based on the World Values Survey Wave 7 questionnaire content below, generate {num_ideas} innovative research proposal(s) for analyzing American values and attitudes.
+
+CRITICAL CONSTRAINT: Your research proposals MUST use ONLY variables and questions that actually exist in the WVS Wave 7 questionnaire provided below. Do NOT propose research on topics that are not covered in this specific questionnaire (e.g., if there are no questions about digital technology, internet use, or social media, do not propose research on those topics).
+
+Carefully review the questionnaire content and base your proposals strictly on the questions that are actually present.
+{diversity_instruction}
+For each proposal, provide:
 1. A compelling title
 2. Clear research objective 
 3. Theoretical background (2-3 sentences referencing relevant theories)
@@ -299,43 +370,38 @@ For the proposal, provide:
 Full questionnaire content:
 {pdf_content}
 
-Format the output as a JSON array with the structure shown in the example.
+Format the output as a JSON array with the structure shown in the example below.
+{"ENSURE EACH PROPOSAL HAS A DIFFERENT TOPIC AND RESEARCH FOCUS." if num_ideas > 1 else ""}
 
-Example structure:
+Example structure (based on ACTUAL WVS questions):
 [{{
   "id": 1,
-  "title": "Title here",
-  "objective": "Research objective",
-  "theoretical_background": "Theory explanation",
-  "hypotheses": ["H1", "H2", "H3"],
+  "title": "Life Satisfaction and Religious Values in America",
+  "objective": "Examine how religious importance relates to life satisfaction and happiness",
+  "theoretical_background": "Religious coping theory suggests religious beliefs provide meaning and social support that enhance well-being...",
+  "hypotheses": ["H1: Higher importance of religion predicts greater life satisfaction"],
   "variables": {{
-    "dependent": ["description of dependent variables"],
-    "independent": ["description of independent variables"],
+    "dependent": ["life satisfaction", "feeling of happiness"],
+    "independent": ["importance of religion in life", "frequency of prayer"],
     "controls": ["age", "gender", "education", "income"]
   }},
-  "analytical_approach": "Statistical method"
-}}]
+  "analytical_approach": "Multiple regression analysis with interaction effects"
+}}{", {{...}}" if num_ideas > 1 else ""}]
+
+NOTE: The example above uses ACTUAL questions from the WVS questionnaire (e.g., 'Important in life: Religion', 'Satisfaction with your life', 'Feeling of happiness'). 
+Generate {num_ideas} {"DIFFERENT proposals on DISTINCT topics, each using ONLY variables that exist in the provided questionnaire" if num_ideas > 1 else "proposal using ONLY variables from the provided questionnaire"}.
 """
     
-    # Initialize Anthropic client
-    client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY_SSA"))
+    # Initialize LLM client using factory
+    factory = LLMClientFactory()
+    client = factory.create_client()
     
-    # Generate proposals using Claude
-    response = client.messages.create(
-        model="claude-sonnet-4-20250514",
-        max_tokens=4000,
-        temperature=0.7,
-        messages=[{
-            "role": "user",
-            "content": prompt
-        }]
-    )
+    # Generate proposals using LLM
+    messages = [{"role": "user", "content": prompt}]
+    response_text = client.generate_response(messages)
     
-    # Parse the response
-    response_text = getattr(response, "content", None)
-    if isinstance(response_text, list) and hasattr(response_text[0], "text"):
-        response_text = response_text[0].text
-    elif isinstance(response_text, str):
+    # Ensure response_text is a string
+    if isinstance(response_text, str):
         pass  # already a string
     else:
         raise ValueError("Unexpected response format from LLM.")
