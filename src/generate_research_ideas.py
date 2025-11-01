@@ -272,13 +272,18 @@ Please provide the refined proposal in the same JSON format, with improved:
 
 Return only the JSON object without additional text."""
     
-    # Get refinement from LLM using factory
+    # Get refinement from LLM using factory with streaming
     try:
         factory = LLMClientFactory()
         client = factory.create_client()
         
         messages = [{"role": "user", "content": prompt}]
-        response_text = client.generate_response(messages)
+        
+        # Use streaming for refinement as well
+        response_chunks = []
+        for chunk in client.generate_response_stream(messages):
+            response_chunks.append(chunk)
+        response_text = "".join(response_chunks)
         
         # Extract JSON from response
         json_match = re.search(r'\{[\s\S]*\}', response_text)
@@ -396,9 +401,20 @@ Generate {num_ideas} {"DIFFERENT proposals on DISTINCT topics, each using ONLY v
     factory = LLMClientFactory()
     client = factory.create_client()
     
-    # Generate proposals using LLM
+    # Generate proposals using LLM with streaming for long requests
     messages = [{"role": "user", "content": prompt}]
-    response_text = client.generate_response(messages)
+    print("Generating research proposals with streaming...")
+    
+    # Use streaming to avoid timeout for large number of ideas
+    response_chunks = []
+    for chunk in client.generate_response_stream(messages):
+        response_chunks.append(chunk)
+        # Optional: print progress indicator
+        if len(response_chunks) % 50 == 0:
+            print(".", end="", flush=True)
+    
+    response_text = "".join(response_chunks)
+    print("\nStreaming completed.")
     
     # Ensure response_text is a string
     if isinstance(response_text, str):

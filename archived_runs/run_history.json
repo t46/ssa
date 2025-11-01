@@ -1,0 +1,516 @@
+[
+  {
+    "run_id": "01",
+    "timestamp": "2025-09-30T21:33:32.909774",
+    "success": true,
+    "steps_completed": 3,
+    "total_steps": 3,
+    "errors": [],
+    "pdf_generated": true,
+    "execution_time": 1230.3838708400726
+  },
+  {
+    "run_id": "02",
+    "timestamp": "2025-09-30T21:53:15.579811",
+    "success": true,
+    "steps_completed": 3,
+    "total_steps": 3,
+    "errors": [],
+    "pdf_generated": true,
+    "execution_time": 1177.6548421382904
+  },
+  {
+    "run_id": "03",
+    "timestamp": "2025-09-30T22:08:30.518195",
+    "success": true,
+    "steps_completed": 3,
+    "total_steps": 3,
+    "errors": [],
+    "pdf_generated": true,
+    "execution_time": 909.9236769676208
+  },
+  {
+    "run_id": "04",
+    "timestamp": "2025-09-30T22:21:01.708503",
+    "success": false,
+    "steps_completed": 2,
+    "total_steps": 3,
+    "errors": [
+      "Step 5: Paper Generation failed"
+    ],
+    "pdf_generated": false,
+    "execution_time": 746.1785001754761
+  },
+  {
+    "run_id": "05",
+    "timestamp": "2025-09-30T22:36:16.765242",
+    "success": true,
+    "steps_completed": 3,
+    "total_steps": 3,
+    "errors": [],
+    "pdf_generated": true,
+    "execution_time": 910.0417857170105
+  },
+  {
+    "run_id": "06",
+    "timestamp": "2025-09-30T22:59:58.334305",
+    "success": true,
+    "steps_completed": 3,
+    "total_steps": 3,
+    "errors": [],
+    "pdf_generated": true,
+    "execution_time": 1416.550271987915
+  },
+  {
+    "run_id": "07",
+    "timestamp": "2025-09-30T23:20:17.117319",
+    "success": true,
+    "steps_completed": 3,
+    "total_steps": 3,
+    "errors": [],
+    "pdf_generated": true,
+    "execution_time": 1213.7700839042664
+  },
+  {
+    "run_id": "08",
+    "timestamp": "2025-09-30T23:37:43.713599",
+    "success": true,
+    "steps_completed": 3,
+    "total_steps": 3,
+    "errors": [],
+    "pdf_generated": true,
+    "execution_time": 1041.5854852199554
+  },
+  {
+    "run_id": "09",
+    "timestamp": "2025-09-30T23:58:15.900832",
+    "success": true,
+    "steps_completed": 3,
+    "total_steps": 3,
+    "errors": [],
+    "pdf_generated": true,
+    "execution_time": 1227.1750190258026
+  },
+  {
+    "run_id": "10",
+    "timestamp": "2025-10-01T00:18:07.535149",
+    "success": true,
+    "steps_completed": 3,
+    "total_steps": 3,
+    "errors": [],
+    "pdf_generated": true,
+    "execution_time": 1186.6171338558197
+  },
+  {
+    "run_id": "11",
+    "timestamp": "2025-10-01T00:33:58.812325",
+    "success": true,
+    "steps_completed": 3,
+    "total_steps": 3,
+    "errors": [],
+    "pdf_generated": true,
+    "execution_time": 946.2604439258575
+  },
+  {
+    "run_id": "12",
+    "timestamp": "2025-10-01T00:49:44.409673",
+    "success": true,
+    "steps_completed": 3,
+    "total_steps": 3,
+    "errors": [],
+    "pdf_generated": true,
+    "execution_time": 940.586433172226
+  },
+  {
+    "run_id": "13",
+    "timestamp": "2025-10-01T01:08:35.246558",
+    "success": true,
+    "steps_completed": 3,
+    "total_steps": 3,
+    "errors": [],
+    "pdf_generated": true,
+    "execution_time": 1125.8185458183289
+  },
+  {
+    "run_id": "14",
+    "timestamp": "2025-10-01T01:26:39.002100",
+    "success": true,
+    "steps_completed": 3,
+    "total_steps": 3,
+    "errors": [],
+    "pdf_generated": true,
+    "execution_time": 1078.741037607193
+  },
+  {
+    "run_id": "15",
+    "timestamp": "2025-10-01T01:58:10.490253",
+    "success": true,
+    "steps_completed": 3,
+    "total_steps": 3,
+    "errors": [],
+    "pdf_generated": true,
+    "execution_time": 1886.474690914154
+  },
+  {
+    "run_id": "16",
+    "timestamp": "2025-10-01T02:08:16.849669",
+    "success": false,
+    "steps_completed": 2,
+    "total_steps": 3,
+    "errors": [
+      "Step 5: Paper Generation failed"
+    ],
+    "pdf_generated": false,
+    "execution_time": 601.3276219367981
+  },
+  {
+    "run_id": "17",
+    "timestamp": "2025-10-01T02:24:59.451972",
+    "success": true,
+    "steps_completed": 3,
+    "total_steps": 3,
+    "errors": [],
+    "pdf_generated": true,
+    "execution_time": 997.5852580070496
+  },
+  {
+    "run_id": "18",
+    "timestamp": "2025-10-01T02:41:06.722128",
+    "success": true,
+    "steps_completed": 3,
+    "total_steps": 3,
+    "errors": [],
+    "pdf_generated": true,
+    "execution_time": 962.2584478855133
+  },
+  {
+    "run_id": "19",
+    "timestamp": "2025-10-01T02:58:26.454521",
+    "success": true,
+    "steps_completed": 3,
+    "total_steps": 3,
+    "errors": [],
+    "pdf_generated": true,
+    "execution_time": 1034.7189848423004
+  },
+  {
+    "run_id": "20",
+    "timestamp": "2025-10-01T03:16:59.098605",
+    "success": true,
+    "steps_completed": 3,
+    "total_steps": 3,
+    "errors": [],
+    "pdf_generated": true,
+    "execution_time": 1107.631551027298
+  },
+  {
+    "run_id": "21",
+    "timestamp": "2025-10-01T03:31:43.988822",
+    "success": true,
+    "steps_completed": 3,
+    "total_steps": 3,
+    "errors": [],
+    "pdf_generated": true,
+    "execution_time": 879.8723790645599
+  },
+  {
+    "run_id": "22",
+    "timestamp": "2025-10-01T03:49:38.700127",
+    "success": true,
+    "steps_completed": 3,
+    "total_steps": 3,
+    "errors": [],
+    "pdf_generated": true,
+    "execution_time": 1069.693294763565
+  },
+  {
+    "run_id": "23",
+    "timestamp": "2025-10-01T04:10:25.744463",
+    "success": false,
+    "steps_completed": 2,
+    "total_steps": 3,
+    "errors": [
+      "Step 4: Analysis failed"
+    ],
+    "pdf_generated": true,
+    "execution_time": 1242.0351250171661
+  },
+  {
+    "run_id": "24",
+    "timestamp": "2025-10-01T04:28:31.701583",
+    "success": true,
+    "steps_completed": 3,
+    "total_steps": 3,
+    "errors": [],
+    "pdf_generated": true,
+    "execution_time": 1080.9397552013397
+  },
+  {
+    "run_id": "25",
+    "timestamp": "2025-10-01T04:45:34.932843",
+    "success": true,
+    "steps_completed": 3,
+    "total_steps": 3,
+    "errors": [],
+    "pdf_generated": true,
+    "execution_time": 1018.214812040329
+  },
+  {
+    "run_id": "26",
+    "timestamp": "2025-10-01T05:06:18.821547",
+    "success": false,
+    "steps_completed": 2,
+    "total_steps": 3,
+    "errors": [
+      "Step 4: Analysis failed"
+    ],
+    "pdf_generated": true,
+    "execution_time": 1238.8699691295624
+  },
+  {
+    "run_id": "27",
+    "timestamp": "2025-10-01T05:22:48.990955",
+    "success": true,
+    "steps_completed": 3,
+    "total_steps": 3,
+    "errors": [],
+    "pdf_generated": true,
+    "execution_time": 985.158399105072
+  },
+  {
+    "run_id": "28",
+    "timestamp": "2025-10-01T05:41:12.255258",
+    "success": true,
+    "steps_completed": 3,
+    "total_steps": 3,
+    "errors": [],
+    "pdf_generated": true,
+    "execution_time": 1098.2539510726929
+  },
+  {
+    "run_id": "29",
+    "timestamp": "2025-10-01T05:57:27.628649",
+    "success": true,
+    "steps_completed": 3,
+    "total_steps": 3,
+    "errors": [],
+    "pdf_generated": true,
+    "execution_time": 970.3627021312714
+  },
+  {
+    "run_id": "30",
+    "timestamp": "2025-10-01T06:14:55.617986",
+    "success": true,
+    "steps_completed": 3,
+    "total_steps": 3,
+    "errors": [],
+    "pdf_generated": true,
+    "execution_time": 1042.9783811569214
+  },
+  {
+    "run_id": "31",
+    "timestamp": "2025-10-01T06:35:20.699787",
+    "success": true,
+    "steps_completed": 3,
+    "total_steps": 3,
+    "errors": [],
+    "pdf_generated": true,
+    "execution_time": 1220.0718812942505
+  },
+  {
+    "run_id": "32",
+    "timestamp": "2025-10-01T06:51:47.003945",
+    "success": true,
+    "steps_completed": 3,
+    "total_steps": 3,
+    "errors": [],
+    "pdf_generated": true,
+    "execution_time": 981.29394698143
+  },
+  {
+    "run_id": "33",
+    "timestamp": "2025-10-01T07:21:35.940082",
+    "success": true,
+    "steps_completed": 3,
+    "total_steps": 3,
+    "errors": [],
+    "pdf_generated": true,
+    "execution_time": 1783.9249527454376
+  },
+  {
+    "run_id": "34",
+    "timestamp": "2025-10-01T07:37:43.351776",
+    "success": true,
+    "steps_completed": 3,
+    "total_steps": 3,
+    "errors": [],
+    "pdf_generated": true,
+    "execution_time": 962.4016313552856
+  },
+  {
+    "run_id": "35",
+    "timestamp": "2025-10-01T07:55:05.749096",
+    "success": true,
+    "steps_completed": 3,
+    "total_steps": 3,
+    "errors": [],
+    "pdf_generated": true,
+    "execution_time": 1037.3872179985046
+  },
+  {
+    "run_id": "36",
+    "timestamp": "2025-10-01T08:18:44.943098",
+    "success": true,
+    "steps_completed": 3,
+    "total_steps": 3,
+    "errors": [],
+    "pdf_generated": true,
+    "execution_time": 1414.1833169460297
+  },
+  {
+    "run_id": "37",
+    "timestamp": "2025-10-01T08:34:25.810031",
+    "success": true,
+    "steps_completed": 3,
+    "total_steps": 3,
+    "errors": [],
+    "pdf_generated": true,
+    "execution_time": 935.8564012050629
+  },
+  {
+    "run_id": "38",
+    "timestamp": "2025-10-01T08:53:47.542599",
+    "success": true,
+    "steps_completed": 3,
+    "total_steps": 3,
+    "errors": [],
+    "pdf_generated": true,
+    "execution_time": 1156.7248859405518
+  },
+  {
+    "run_id": "39",
+    "timestamp": "2025-10-01T09:14:22.461483",
+    "success": true,
+    "steps_completed": 3,
+    "total_steps": 3,
+    "errors": [],
+    "pdf_generated": true,
+    "execution_time": 1229.9087119102478
+  },
+  {
+    "run_id": "40",
+    "timestamp": "2025-10-01T09:31:11.995321",
+    "success": true,
+    "steps_completed": 3,
+    "total_steps": 3,
+    "errors": [],
+    "pdf_generated": true,
+    "execution_time": 1004.5232598781586
+  },
+  {
+    "run_id": "41",
+    "timestamp": "2025-10-01T09:33:18.808438",
+    "success": false,
+    "steps_completed": 2,
+    "total_steps": 3,
+    "errors": [
+      "Step 5: Paper Generation failed"
+    ],
+    "pdf_generated": false,
+    "execution_time": 121.79708003997803
+  },
+  {
+    "run_id": "42",
+    "timestamp": "2025-10-01T09:55:15.305494",
+    "success": true,
+    "steps_completed": 3,
+    "total_steps": 3,
+    "errors": [],
+    "pdf_generated": true,
+    "execution_time": 1311.4860949516296
+  },
+  {
+    "run_id": "43",
+    "timestamp": "2025-10-01T11:15:17.113087",
+    "success": true,
+    "steps_completed": 3,
+    "total_steps": 3,
+    "errors": [],
+    "pdf_generated": true,
+    "execution_time": 4796.7899289131165
+  },
+  {
+    "run_id": "44",
+    "timestamp": "2025-10-01T11:37:32.573685",
+    "success": true,
+    "steps_completed": 3,
+    "total_steps": 3,
+    "errors": [],
+    "pdf_generated": true,
+    "execution_time": 1330.4484832286835
+  },
+  {
+    "run_id": "45",
+    "timestamp": "2025-10-01T11:39:43.458250",
+    "success": false,
+    "steps_completed": 2,
+    "total_steps": 3,
+    "errors": [
+      "Step 5: Paper Generation failed"
+    ],
+    "pdf_generated": false,
+    "execution_time": 125.87265682220459
+  },
+  {
+    "run_id": "46",
+    "timestamp": "2025-10-01T11:49:42.859608",
+    "success": false,
+    "steps_completed": 2,
+    "total_steps": 3,
+    "errors": [
+      "Step 5: Paper Generation failed"
+    ],
+    "pdf_generated": false,
+    "execution_time": 594.3776760101318
+  },
+  {
+    "run_id": "47",
+    "timestamp": "2025-10-01T12:13:33.636022",
+    "success": true,
+    "steps_completed": 3,
+    "total_steps": 3,
+    "errors": [],
+    "pdf_generated": true,
+    "execution_time": 1425.7652130126953
+  },
+  {
+    "run_id": "48",
+    "timestamp": "2025-10-01T12:31:57.259447",
+    "success": true,
+    "steps_completed": 3,
+    "total_steps": 3,
+    "errors": [],
+    "pdf_generated": true,
+    "execution_time": 1098.6130509376526
+  },
+  {
+    "run_id": "49",
+    "timestamp": "2025-10-01T12:52:41.446172",
+    "success": true,
+    "steps_completed": 3,
+    "total_steps": 3,
+    "errors": [],
+    "pdf_generated": true,
+    "execution_time": 1239.177258014679
+  },
+  {
+    "run_id": "50",
+    "timestamp": "2025-10-01T13:19:46.102129",
+    "success": true,
+    "steps_completed": 3,
+    "total_steps": 3,
+    "errors": [],
+    "pdf_generated": true,
+    "execution_time": 1619.6434428691864
+  }
+]

@@ -1,0 +1,12 @@
+{
+  "run_id": "23",
+  "timestamp": "2025-10-01T04:10:25.744463",
+  "success": false,
+  "steps_completed": 2,
+  "total_steps": 3,
+  "errors": [
+    "Step 4: Analysis failed"
+  ],
+  "pdf_generated": true,
+  "execution_time": 1242.0351250171661
+}

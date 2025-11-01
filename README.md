@@ -17,11 +17,42 @@ World Values Survey Wave 7 (2017-2022) の米国データを用いた社会科�
 ### 1. 環境変数の設定
 
 ```bash
-# .envファイルを作成
-cp .env.example .env
+# 環境変数を設定（どちらか一方を選択）
 
-# 以下の環境変数を設定
-# ANTHROPIC_API_KEY_SSA=your_anthropic_api_key
+# Anthropic Claude を使用する場合
+export ANTHROPIC_API_KEY_SSA=your_anthropic_api_key
+export LLM_PROVIDER=anthropic
+
+# OpenAI GPT を使用する場合
+export OPENAI_API_KEY_SSA=your_openai_api_key
+export LLM_PROVIDER=openai
+
+# または、.zshrc や .bashrc に追加して永続化
+echo 'export ANTHROPIC_API_KEY_SSA=your_anthropic_api_key' >> ~/.zshrc
+echo 'export LLM_PROVIDER=anthropic' >> ~/.zshrc
+# または
+echo 'export OPENAI_API_KEY_SSA=your_openai_api_key' >> ~/.zshrc
+echo 'export LLM_PROVIDER=openai' >> ~/.zshrc
+
+### 2. LLM設定のカスタマイズ
+
+`config/llm_config.yaml` ファイルで、各LLMプロバイダーの詳細設定を変更できます：
+
+```yaml
+# デフォルトプロバイダー
+default_provider: "anthropic"
+
+# Anthropic設定
+anthropic:
+  model: "claude-sonnet-4-20250514"
+  max_tokens: 4000
+  temperature: 0.7
+
+# OpenAI設定
+openai:
+  model: "gpt-4o"
+  max_tokens: 4000
+  temperature: 0.7
 ```
 
 ### 2. 依存関係のインストール
@@ -60,6 +91,8 @@ uv run run_pipeline.py
 
 ```
 ssa/
+├── config/
+│   └── llm_config.yaml  # LLM設定ファイル
 ├── data/
 │   ├── raw/          # 生データ（WVS公式サイトからダウンロード）
 │   └── processed/    # 前処理済みデータ

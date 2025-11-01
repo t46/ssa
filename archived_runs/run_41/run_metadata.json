@@ -1,0 +1,12 @@
+{
+  "run_id": "41",
+  "timestamp": "2025-10-01T09:33:18.808438",
+  "success": false,
+  "steps_completed": 2,
+  "total_steps": 3,
+  "errors": [
+    "Step 5: Paper Generation failed"
+  ],
+  "pdf_generated": false,
+  "execution_time": 121.79708003997803
+}

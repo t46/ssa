@@ -1,0 +1,37 @@
+# LLM Configuration
+# Supported providers: anthropic, openai, ollama
+
+# Default provider (can be overridden by environment variable LLM_PROVIDER)
+default_provider: "anthropic"
+
+# Research pipeline configuration
+research:
+  num_ideas: 50  # Number of research ideas to generate
+                # - num_ideas: 1  → generates 1 paper (paper_1.tex, paper_1.pdf)
+                # - num_ideas: 3  → generates 3 papers (paper_1.tex, paper_2.tex, paper_3.tex, etc.)
+                # Each idea will be independently analyzed and written as a separate paper
+
+# Anthropic configuration
+anthropic:
+  model: "claude-sonnet-4-5-20250929"
+  max_tokens: 64000
+  temperature: 1.0
+  api_key_env: "ANTHROPIC_API_KEY_SSA"
+
+# OpenAI configuration  
+openai:
+  model: "gpt-5-mini"
+  api_key_env: "OPENAI_API_KEY_SSA"
+
+# Ollama configuration (local models)
+ollama:
+  model: "gpt-oss:20b"  # Default model, can be changed to any available Ollama model
+  temperature: 1.0
+  # Note: Ollama doesn't require API keys, it connects to local Ollama server
+
+# Claude Code SDK configuration (for analysis)
+claude_code_sdk:
+  max_turns: 10
+  system_prompt: "You are a data scientist and statistician specialized in social science research. You have access to read and write files, execute bash commands, and use all available tools."
+  allowed_tools: ["Read", "Write", "Bash", "Editor", "Computer", "Browser", "Terminal"]
+  permission_mode: "acceptEdits"
