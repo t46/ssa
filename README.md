@@ -1,5 +1,8 @@
 # Social Science Research Automation (SSA)
 
+Security: after environment setup/sync, check Pillow’s bundled Brotli decoder; see [CVE-2026-111497 remediation](docs/BROTLI_SECURITY.md).
+
+
 World Values Survey Wave 7 (2017-2022) の米国データを用いた社会科学研究の自動化パイプライン
 
 ## 概要
